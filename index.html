@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoBab Universal Pro (Final)</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for rendering Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- docx.js for reliable Word export -->
+    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <!-- FileSaver.js for saving the docx file -->
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icon Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Light Theme Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; } /* slate-200 */
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
+        /* Dark Theme Scrollbar */
+        .dark ::-webkit-scrollbar-track { background: #1e293b; } /* slate-800 */
+        .dark ::-webkit-scrollbar-thumb { background: #475569; } /* slate-600 */
+        
+        .prose-output h1, .prose-output h2, .prose-output h3 { font-weight: 700; }
+        .prose-output h1 { font-size: 1.5rem; margin-top: 0; margin-bottom: 1rem; padding-bottom: 0.5rem; }
+        .prose-output h2 { font-size: 1.25rem; margin-top: 1.5rem; margin-bottom: 1rem; }
+        .prose-output p { margin-bottom: 1rem; line-height: 1.75; }
+        .prose-output ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+        .prose-output ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; }
+        
+        #paraphrase-panel { transition: transform 0.3s ease-in-out, opacity 0.3s; }
+        .toggle-btn[data-active="true"] { background-color: #4f46e5; color: white; }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-colors duration-300">
+
+    <div id="app" class="flex flex-col lg:flex-row min-h-screen">
+        <!-- Input Panel -->
+        <div class="lg:w-2/5 xl:w-1/3 w-full bg-slate-50 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 p-6 lg:p-8 flex flex-col h-screen">
+            <header class="mb-6 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-teal-500 rounded-lg flex items-center justify-center">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch-plus"><path d="M6 3v12"/><path d="M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M15 6a9 9 0 0 0-9 9"/><path d="M18 15v6"/><path d="M21 18h-6"/></svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100" data-translate-key="appTitle">AutoBab Universal Pro</h1>
+                        <p class="text-sm text-slate-500 dark:text-slate-400" data-translate-key="appSubtitle">Intelligent Document Generator</p>
+                    </div>
+                </div>
+                <button id="open-settings-btn" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </header>
+
+            <form id="generation-form" class="flex-grow overflow-y-auto pr-2 space-y-6">
+                 <fieldset>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="generation-mode" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelMode">1. Mode Pembuatan</label>
+                             <select id="generation-mode" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="otomatis" selected data-translate-key="modeOtomatis">Otomatis (Sekali Jadi)</option>
+                                <option value="manual" data-translate-key="modeManual">Manual (Per Bagian)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="jenis-dokumen" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelDocType">2. Jenis Dokumen</label>
+                             <select id="jenis-dokumen" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="Skripsi" selected>Skripsi</option>
+                                <option value="Makalah">Makalah</option>
+                                <option value="Jurnal Ilmiah">Jurnal Ilmiah</option>
+                                <option value="Artikel Ilmiah">Artikel Ilmiah</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="topik" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelTopic">3. Topik Utama</label>
+                            <textarea id="topik" rows="3" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-400" data-translate-key="placeholderTopic" placeholder="Masukkan topik, judul, atau ide utama..."></textarea>
+                        </div>
+                         <div>
+                            <label for="gaya_sitasi" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelCitation">4. Opsi Sitasi</label>
+                            <div class="flex gap-2">
+                                <select id="gaya_sitasi" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                    <option value="APA" selected>APA 7th</option>
+                                    <option value="MLA">MLA 9th</option>
+                                    <option value="IEEE">IEEE</option>
+                                </select>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md whitespace-nowrap">
+                                    <input id="include-citations" type="checkbox" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500" checked>
+                                    <label for="include-citations" class="ml-2 text-sm" data-translate-key="labelInclude">Sertakan</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Dynamic Options Container -->
+                <div id="manual-mode-options" class="hidden">
+                     <fieldset>
+                        <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelSelectSections">5. Pilih Bagian Dokumen</legend>
+                        <div id="manual-sections-container" class="space-y-2 text-sm"></div>
+                    </fieldset>
+                     <fieldset id="manual-custom-prompts-container" class="hidden mt-4">
+                         <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelCustomPrompts">6. Instruksi Kustom (Opsional)</legend>
+                         <div id="manual-custom-prompts-wrapper" class="space-y-3"></div>
+                    </fieldset>
+                </div>
+                
+                <div class="pt-4">
+                    <button type="button" id="generate-btn" class="w-full bg-teal-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-teal-700 flex items-center justify-center gap-2">
+                        <i id="generate-btn-icon" data-lucide="file-pen-line" class="w-5 h-5"></i>
+                        <span id="btn-text" data-translate-key="btnGenerate">Generate Dokumen</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Output Panel -->
+        <div id="output-panel" class="lg:w-3/5 xl:w-2/3 w-full p-6 lg:p-10 h-screen flex flex-col relative overflow-hidden">
+             <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-slate-800 dark:text-slate-200" data-translate-key="titleWorkspace">Ruang Kerja Dokumen</h2>
+                <div id="export-buttons" class="hidden flex items-center gap-2">
+                    <button id="copy-all-btn" class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="copy" class="w-4 h-4"></i><span data-translate-key="btnCopyAll">Salin Semua</span>
+                    </button>
+                    <button id="export-docx-btn" class="bg-blue-600 text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="file-down" class="w-4 h-4"></i><span data-translate-key="btnExport">Export .docx</span>
+                    </button>
+                </div>
+                 <div id="copy-feedback" class="hidden fixed top-5 right-5 bg-slate-800 text-white text-sm px-3 py-1 rounded-md z-50" data-translate-key="feedbackCopied">Teks disalin!</div>
+            </div>
+            <div id="output-container" class="bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex-grow p-4 lg:p-6 overflow-y-auto relative">
+                <div id="placeholder" class="flex flex-col items-center justify-center h-full text-center"><div class="w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4"><i data-lucide="file-search-2" class="w-8 h-8 text-slate-400 dark:text-slate-500"></i></div><h2 class="text-xl font-semibold text-slate-700 dark:text-slate-300" data-translate-key="placeholderTitle">Mulai Proyek Tulisan Anda</h2><p class="text-slate-500 dark:text-slate-400 mt-2 max-w-md" data-translate-key="placeholderSubtitle">Pilih mode, jenis dokumen, isi topik, lalu klik generate.</p></div>
+                <div id="loader" class="hidden absolute inset-0 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm flex flex-col items-center justify-center z-10"><div class="w-12 h-12 border-4 border-t-teal-500 border-slate-300 dark:border-slate-600 rounded-full animate-spin"></div><p id="loader-text" class="mt-4 text-slate-500 dark:text-slate-400 font-medium"></p></div>
+                <div id="content-sections-container" class="space-y-4 prose-output dark:text-slate-300 text-slate-700"></div>
+            </div>
+            
+            <div id="paraphrase-panel" class="hidden absolute bottom-10 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl bg-slate-200/90 dark:bg-slate-700/90 backdrop-blur-md shadow-2xl rounded-xl p-3 border border-slate-300 dark:border-slate-600 z-20">
+                <div class="flex justify-between items-center"><p class="text-sm font-semibold text-slate-800 dark:text-slate-200" data-translate-key="paraphraseTitle">Alat Parafrase</p><button id="close-paraphrase-panel" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+                <div class="text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 my-2 rounded-md max-h-16 overflow-y-auto" id="selected-text-preview"></div>
+                <div class="flex items-center gap-2 mt-3">
+                    <button data-mode="ai0" data-active="false" class="paraphrase-mode-btn toggle-btn flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 text-sm">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i><span data-translate-key="paraphraseAI">AI 0%</span></button>
+                    <button data-mode="copyright0" data-active="false" class="paraphrase-mode-btn toggle-btn flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 text-sm">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i><span data-translate-key="paraphraseCopyright">0% Copyright</span></button>
+                    <button id="btn_custom" class="relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 text-sm">
+                        <i data-lucide="sliders" class="w-4 h-4"></i><span data-translate-key="paraphraseCustom">Kustom</span><div id="custom-indicator" class="hidden absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full border border-slate-800"></div></button>
+                    <div class="border-l border-slate-400 dark:border-slate-500 h-6 mx-1"></div>
+                    <button id="btn_paraphrase" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 text-sm flex-grow" data-translate-key="btnParaphrase">Parafrasekan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg w-full max-w-lg p-6 border border-slate-200 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6" data-translate-key="settingsTitle">Pengaturan</h2>
+            
+            <div class="space-y-6">
+                <!-- API Key Settings -->
+                <fieldset>
+                    <legend class="text-sm font-medium text-slate-600 dark:text-slate-300" data-translate-key="settingsApiTitle">Kunci API Gemini</legend>
+                    <div class="mt-2 space-y-2">
+                        <select id="setting-api-key-choice" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                            <option value="default1">Default Key 1</option>
+                            <option value="default2">Default Key 2</option>
+                            <option value="custom">Custom Key</option>
+                        </select>
+                        <input type="password" id="setting-custom-api-key" class="hidden w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" placeholder="Masukkan custom API key Anda...">
+                    </div>
+                </fieldset>
+
+                <!-- Appearance Settings -->
+                <fieldset>
+                    <legend class="text-sm font-medium text-slate-600 dark:text-slate-300" data-translate-key="settingsAppearanceTitle">Tampilan</legend>
+                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                           <label for="setting-language" class="block text-xs text-slate-500" data-translate-key="settingsLanguage">Bahasa</label>
+                           <select id="setting-language" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="id">Bahasa Indonesia</option>
+                                <option value="en">English</option>
+                           </select>
+                        </div>
+                        <div>
+                           <label for="setting-theme" class="block text-xs text-slate-500" data-translate-key="settingsTheme">Tema</label>
+                           <select id="setting-theme" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="dark" data-translate-key="themeDark">Gelap</option>
+                                <option value="light" data-translate-key="themeLight">Terang</option>
+                           </select>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Document Settings -->
+                <fieldset>
+                    <legend class="text-sm font-medium text-slate-600 dark:text-slate-300" data-translate-key="settingsDocTitle">Dokumen</legend>
+                     <div class="mt-2 p-3 bg-slate-100 dark:bg-slate-700/50 rounded-md">
+                        <label for="setting-toc-dots" class="flex items-center justify-between cursor-pointer">
+                            <span class="text-sm text-slate-700 dark:text-slate-200" data-translate-key="settingsTocDots">Gunakan garis titik-titik di Daftar Isi</span>
+                            <div class="relative">
+                                <input type="checkbox" id="setting-toc-dots" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-300 dark:bg-slate-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-500"></div>
+                            </div>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="mt-8 flex justify-end gap-3">
+                <button id="modal-close-btn" class="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-sm font-semibold" data-translate-key="btnClose">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Paraphrase Modal is loaded via JS now -->
+    <div id="custom-modal-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // --- DATA & CONFIGURATION ---
+            const translations = {
+                en: { appTitle: "AutoBab Universal Pro", appSubtitle: "Intelligent Document Generator", labelMode: "1. Generation Mode", modeOtomatis: "Automatic (Single Step)", modeManual: "Manual (Per Section)", labelDocType: "2. Document Type", labelTopic: "3. Main Topic", placeholderTopic: "Enter topic, title, or main idea...", labelCitation: "4. Citation Options", labelInclude: "Include", labelSelectSections: "5. Select Document Sections", labelCustomPrompts: "6. Custom Instructions (Optional)", btnGenerate: "Generate Document", btnStartManual: "Start Manual Process", titleWorkspace: "Document Workspace", btnCopyAll: "Copy All", btnExport: "Export .docx", feedbackCopied: "Text copied!", placeholderTitle: "Start Your Writing Project", placeholderSubtitle: "Choose a mode, document type, fill in the topic, then click generate.", paraphraseTitle: "Paraphrase Tool", paraphraseAI: "AI 0%", paraphraseCopyright: "0% Copyright", paraphraseCustom: "Custom", btnParaphrase: "Paraphrase", settingsTitle: "Settings", settingsApiTitle: "Gemini API Key", settingsAppearanceTitle: "Appearance", settingsLanguage: "Language", settingsTheme: "Theme", themeDark: "Dark", themeLight: "Light", settingsDocTitle: "Document", settingsTocDots: "Use dot leaders in Table of Contents", btnClose: "Close", loaderPreparing: "Preparing...", loaderCreating: "Creating content...", loaderFinalizing: "Finalizing document...", manualStepTitle: "Manual Process: Create Main Content", manualStepSubtitle: "Create the main sections one by one. The 'Finalize' button will become active once all main sections are complete.", manualFinalizeBtn: "Finalize Document", manualPartsRemaining: "other parts", },
+                id: { appTitle: "AutoBab Universal Pro", appSubtitle: "Generator Dokumen Cerdas", labelMode: "1. Mode Pembuatan", modeOtomatis: "Otomatis (Sekali Jadi)", modeManual: "Manual (Per Bagian)", labelDocType: "2. Jenis Dokumen", labelTopic: "3. Topik Utama", placeholderTopic: "Masukkan topik, judul, atau ide utama...", labelCitation: "4. Opsi Sitasi", labelInclude: "Sertakan", labelSelectSections: "5. Pilih Bagian Dokumen", labelCustomPrompts: "6. Instruksi Kustom (Opsional)", btnGenerate: "Generate Dokumen", btnStartManual: "Mulai Proses Manual", titleWorkspace: "Ruang Kerja Dokumen", btnCopyAll: "Salin Semua", btnExport: "Export .docx", feedbackCopied: "Teks disalin!", placeholderTitle: "Mulai Proyek Tulisan Anda", placeholderSubtitle: "Pilih mode, jenis dokumen, isi topik, lalu klik generate.", paraphraseTitle: "Alat Parafrase", paraphraseAI: "AI 0%", paraphraseCopyright: "0% Copyright", paraphraseCustom: "Kustom", btnParaphrase: "Parafrasekan", settingsTitle: "Pengaturan", settingsApiTitle: "Kunci API Gemini", settingsAppearanceTitle: "Tampilan", settingsLanguage: "Bahasa", settingsTheme: "Tema", themeDark: "Gelap", themeLight: "Terang", settingsDocTitle: "Dokumen", settingsTocDots: "Gunakan garis titik-titik di Daftar Isi", btnClose: "Tutup", loaderPreparing: "Mempersiapkan...", loaderCreating: "Membuat konten...", loaderFinalizing: "Memfinalisasi dokumen...", manualStepTitle: "Proses Manual: Buat Konten Utama", manualStepSubtitle: "Buat bagian-bagian utama satu per satu. Tombol 'Finalisasi' akan aktif setelah semua bagian utama selesai dibuat.", manualFinalizeBtn: "Finalisasi Dokumen", manualPartsRemaining: "bagian lain", }
+            };
+            const defaultApiKeys = {
+                default1: "AIzaSyC0GYWD9FiLXcVHDLt_VbSmKAMl0oieIAY",
+                default2: "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk"
+            };
+            const doc_structures = {
+                 "Skripsi": { structure: ["Judul", "Halaman Pengesahan", "Abstrak", "Kata Pengantar", "Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi Penelitian", "Bab 4 Hasil dan Pembahasan", "Bab 5 Penutup", "Daftar Pustaka", "Lampiran"] },
+                 "Makalah": { structure: ["Judul", "Kata Pengantar", "Daftar Isi", "Abstrak + Kata Kunci", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi", "Bab 4 Hasil dan Pembahasan", "Bab 5 Penutup", "Daftar Pustaka"] },
+                 "Jurnal Ilmiah": { structure: ["Judul", "Abstrak + Kata Kunci", "Pendahuluan", "Kajian Pustaka", "Metodologi", "Bab 4 Hasil", "Bab 5 Pembahasan", "Kesimpulan", "Daftar Pustaka"] },
+                 "Artikel Ilmiah": { structure: ["Judul", "Abstrak", "Pendahuluan", "Isi / Pembahasan", "Penutup", "Daftar Pustaka"] }
+            };
+            const all_main_sections = [ "Pendahuluan", "Bab 1 Pendahuluan", "Kajian Pustaka", "Bab 2 Kajian Pustaka", "Metodologi", "Bab 3 Metodologi", "Bab 3 Metodologi Penelitian", "Hasil dan Pembahasan", "Bab 4 Hasil dan Pembahasan", "Bab 4 Hasil", "Bab 5 Pembahasan", "Pembahasan", "Isi / Pembahasan", "Kesimpulan", "Penutup", "Bab 5 Penutup", "Abstrak", "Abstrak + Kata Kunci"];
+            
+            let appState = { content: {}, toc: [] };
+            let appSettings = {};
+            
+            const ui = {
+                loader: document.getElementById('loader'), loaderText: document.getElementById('loader-text'),
+                placeholder: document.getElementById('placeholder'), 
+                contentContainer: document.getElementById('content-sections-container'), exportButtons: document.getElementById('export-buttons'),
+                manualModeOptions: document.getElementById('manual-mode-options'), manualSectionsContainer: document.getElementById('manual-sections-container'),
+                manualCustomPromptsContainer: document.getElementById('manual-custom-prompts-container'), manualCustomPromptsWrapper: document.getElementById('manual-custom-prompts-wrapper'),
+                settingsModal: document.getElementById('settings-modal'),
+                generateBtn: document.getElementById('generate-btn'),
+                generateBtnIcon: document.getElementById('generate-btn-icon'),
+                btnText: document.getElementById('btn-text'),
+            };
+
+            // --- SETTINGS MANAGEMENT ---
+            const loadSettings = () => {
+                const savedSettings = JSON.parse(localStorage.getItem('autoBabSettings_v5')) || {};
+                appSettings = {
+                    apiKeyChoice: savedSettings.apiKeyChoice || 'default1',
+                    customApiKey: savedSettings.customApiKey || '',
+                    language: savedSettings.language || 'id',
+                    theme: savedSettings.theme || 'dark',
+                    tocDots: savedSettings.tocDots === true,
+                };
+                applySettings();
+            };
+            const saveSettings = () => { localStorage.setItem('autoBabSettings_v5', JSON.stringify(appSettings)); };
+            const applySettings = () => {
+                document.getElementById('setting-api-key-choice').value = appSettings.apiKeyChoice;
+                const customKeyInput = document.getElementById('setting-custom-api-key');
+                customKeyInput.value = appSettings.customApiKey;
+                customKeyInput.classList.toggle('hidden', appSettings.apiKeyChoice !== 'custom');
+                document.getElementById('setting-language').value = appSettings.language;
+                applyLanguage(appSettings.language);
+                document.getElementById('setting-theme').value = appSettings.theme;
+                applyTheme(appSettings.theme);
+                document.getElementById('setting-toc-dots').checked = appSettings.tocDots;
+            };
+            const applyLanguage = (lang) => {
+                document.documentElement.lang = lang;
+                document.querySelectorAll('[data-translate-key]').forEach(el => {
+                    const key = el.dataset.translateKey;
+                    const translation = translations[lang]?.[key];
+                    if (translation) {
+                        if (el.placeholder !== undefined) el.placeholder = translation;
+                        else el.textContent = translation;
+                    }
+                });
+            };
+            const applyTheme = (theme) => {
+                if (theme === 'dark') document.documentElement.classList.add('dark');
+                else document.documentElement.classList.remove('dark');
+            };
+            const getActiveApiKey = () => {
+                if (appSettings.apiKeyChoice === 'custom') return appSettings.customApiKey;
+                return defaultApiKeys[appSettings.apiKeyChoice];
+            };
+
+            // --- CORE API LOGIC ---
+            const callGeminiAPI = async (prompt) => {
+                const apiKey = getActiveApiKey();
+                if (!apiKey) {
+                    alert("Kunci API tidak valid. Silakan periksa Pengaturan.");
+                    return `### Kesalahan Konfigurasi\n\nAPI Key belum diatur atau tidak valid.`;
+                }
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const systemInstructionText = `Anda adalah asisten AI akademis. Gunakan Bahasa Indonesia yang baik dan benar. Tulis konten untuk bagian yang diminta berdasarkan topik. ${document.getElementById('include-citations').checked ? `Sisipkan sitasi (${document.getElementById('gaya_sitasi').value}: Nama, Tahun) jika perlu.` : ''} JANGAN membuat daftar pustaka kecuali diminta secara eksplisit. Fokus hanya pada konten bagian yang diminta. Mulai respons Anda LANGSUNG dengan konten.`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: systemInstructionText }] }
+                };
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    const result = await response.json(); 
+                    if (result.candidates?.[0]?.content?.parts?.[0]) return result.candidates[0].content.parts[0].text;
+                    throw new Error(`Struktur respons API tidak valid atau konten diblokir. Respons: ${JSON.stringify(result)}`);
+                } catch (error) { console.error("Error calling Gemini API:", error); return `### Terjadi Kesalahan\n${error.message}`; }
+            };
+
+            const getAbstractLanguagePrompt = () => {
+                const langSelect = document.getElementById('manual-abstract-lang');
+                if (langSelect) {
+                    const lang = langSelect.value;
+                    return ` Untuk bagian "Abstrak + Kata Kunci" atau "Abstrak", buatlah dalam ${lang}. Setelah abstrak, sertakan 3-5 kata kunci yang relevan.`;
+                }
+                return '';
+            };
+            
+            // --- UI & WORKFLOW MANAGEMENT ---
+            function resetStateAndUI() {
+                appState = { content: {}, toc: [] };
+                ui.contentContainer.innerHTML = '';
+                ui.placeholder.classList.remove('hidden');
+                ui.exportButtons.classList.add('hidden');
+                ui.loader.classList.add('hidden');
+            }
+
+            function updateWorkflowUI() {
+                resetStateAndUI();
+                ui.generateBtn.disabled = false;
+                const mode = document.getElementById('generation-mode').value;
+                ui.manualModeOptions.classList.toggle('hidden', mode === 'otomatis');
+
+                if (mode === 'otomatis') {
+                    ui.btnText.dataset.translateKey = 'btnGenerate';
+                    ui.generateBtnIcon.setAttribute('data-lucide', 'file-pen-line');
+                } else {
+                    ui.btnText.dataset.translateKey = 'btnStartManual';
+                    ui.generateBtnIcon.setAttribute('data-lucide', 'git-commit-vertical');
+                    updateManualChecklist();
+                }
+                applyLanguage(appSettings.language); 
+                lucide.createIcons();
+            }
+
+            function updateManualChecklist() { 
+                const docType = document.getElementById('jenis-dokumen').value;
+                const allSectionsFlat = doc_structures[docType].structure;
+                ui.manualSectionsContainer.innerHTML = '';
+                ui.manualCustomPromptsWrapper.innerHTML = '';
+                let hasMainContent = false;
+                allSectionsFlat.forEach(item => {
+                    const sectionTitle = typeof item === 'string' ? item : item.section;
+                    const sectionId = sectionTitle.replace(/[^a-zA-Z0-9]/g, '-');
+                    
+                    let controls = '';
+                    if(sectionTitle.toLowerCase().includes('abstrak')) {
+                        controls = `<select id="manual-abstract-lang" class="ml-auto text-xs p-1 border-slate-400 dark:border-slate-500 bg-white dark:bg-slate-600 rounded-md shadow-sm">
+                                        <option value="Bahasa Indonesia">ID</option>
+                                        <option value="Bahasa Inggris">EN</option>
+                                        <option value="Keduanya (Indonesia & Inggris)">ID & EN</option>
+                                    </select>`;
+                    }
+
+                    ui.manualSectionsContainer.innerHTML += `<div class="flex items-center p-2 bg-white dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600"><input id="manual-check-${sectionId}" type="checkbox" data-section-title="${sectionTitle}" class="section-check h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500" checked><label for="manual-check-${sectionId}" class="ml-3 text-slate-700 dark:text-slate-200">${sectionTitle}</label>${controls}</div>`;
+                    
+                    if (all_main_sections.includes(sectionTitle)) {
+                        hasMainContent = true;
+                        ui.manualCustomPromptsWrapper.innerHTML += `<div id="prompt-container-${sectionId}" class="custom-prompt-item"><label for="prompt-${sectionId}" class="text-sm font-medium text-slate-600 dark:text-slate-300">Instruksi ${sectionTitle}:</label><textarea id="prompt-${sectionId}" rows="2" class="w-full text-sm p-2 mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" placeholder="Opsional..."></textarea></div>`;
+                    }
+                });
+                ui.manualCustomPromptsContainer.classList.toggle('hidden', !hasMainContent);
+                document.querySelectorAll('#manual-sections-container .section-check').forEach(checkbox => checkbox.addEventListener('change', () => {
+                    const sectionId = checkbox.dataset.sectionTitle.replace(/[^a-zA-Z0-9]/g, '-');
+                    const promptContainer = document.getElementById(`prompt-container-${sectionId}`);
+                    if(promptContainer) promptContainer.classList.toggle('hidden', !checkbox.checked);
+                }));
+            }
+            
+            // --- MAIN GENERATION FUNCTIONS ---
+            async function handleGeneration() {
+                if (ui.generateBtn.disabled) return;
+                const topic = document.getElementById('topik').value.trim();
+                if (!topic) {
+                    alert("Topik utama tidak boleh kosong.");
+                    return;
+                }
+                ui.generateBtn.disabled = true;
+                resetStateAndUI();
+                ui.placeholder.classList.add('hidden');
+
+                try {
+                    if (document.getElementById('generation-mode').value === 'manual') {
+                        await startManualGeneration();
+                    } else {
+                        await generateDocument_Otomatis();
+                    }
+                } catch (error) {
+                    console.error("An error occurred during generation:", error);
+                    alert("Terjadi kesalahan saat generate. Silakan coba lagi.");
+                } finally {
+                    ui.generateBtn.disabled = false;
+                }
+            }
+
+            async function startManualGeneration() {
+                const allSelectedSections = Array.from(document.querySelectorAll('#manual-sections-container .section-check:checked')).map(cb => cb.dataset.sectionTitle);
+                if (allSelectedSections.length === 0) {
+                    alert("Pilih minimal satu bagian untuk dibuat.");
+                    return;
+                }
+                appState.toc = allSelectedSections;
+                appState.generatedMain = new Set();
+                const mainContentSections = allSelectedSections.filter(title => all_main_sections.includes(title));
+                const otherSections = allSelectedSections.filter(title => !all_main_sections.includes(title));
+
+                let html = `<div class="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50"><h3 class="font-bold mb-3 text-slate-800 dark:text-slate-200" data-translate-key="manualStepTitle"></h3><p class="text-sm text-slate-500 dark:text-slate-400 mb-4" data-translate-key="manualStepSubtitle"></p><div id="manual-buttons-container" class="space-y-2">`;
+                mainContentSections.forEach(title => {
+                    html += `<button data-section-title="${title}" class="manual-generate-btn w-full text-left p-3 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md text-sm font-medium flex items-center justify-between transition-all duration-200 border border-slate-200 dark:border-slate-600"><span class="flex items-center gap-3"><i data-lucide="circle" class="w-4 h-4 text-slate-400 status-icon"></i><span>${title}</span></span><span class="loader-spot"></span></button>`;
+                });
+                html += `</div><button id="manual-finalize-btn" disabled class="w-full mt-4 bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-teal-700 disabled:bg-slate-500 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"><i data-lucide="wand-2" class="w-5 h-5"></i><span>${translations[appSettings.language].manualFinalizeBtn} (${otherSections.length} ${translations[appSettings.language].manualPartsRemaining})</span></button><div id="manual-preview-container" class="mt-4 space-y-4"></div></div>`;
+                
+                ui.contentContainer.innerHTML = html;
+                applyLanguage(appSettings.language);
+                lucide.createIcons();
+                document.querySelectorAll('.manual-generate-btn').forEach(btn => btn.addEventListener('click', generateSingleManualSection));
+                document.getElementById('manual-finalize-btn').addEventListener('click', finalizeManualDocument);
+            }
+            
+            async function generateSingleManualSection(event) {
+                const button = event.currentTarget;
+                const title = button.dataset.sectionTitle;
+                const icon = button.querySelector('.status-icon');
+                const loaderSpot = button.querySelector('.loader-spot');
+                
+                button.disabled = true;
+                if(icon) icon.style.display = 'none';
+                
+                loaderSpot.innerHTML = `<div class="w-4 h-4 border-2 border-t-teal-400 border-slate-500 rounded-full animate-spin"></div>`;
+
+                let prompt = `Topik utama: "${document.getElementById('topik').value}". Buat konten untuk bagian "${title}" dari sebuah dokumen "${document.getElementById('jenis-dokumen').value}".`;
+                if (title.toLowerCase().includes('abstrak')) { prompt += getAbstractLanguagePrompt(); }
+                const customPrompt = document.getElementById(`prompt-${title.replace(/[^a-zA-Z0-9]/g, '-')}`)?.value || '';
+                if(customPrompt) prompt += `\nInstruksi tambahan: "${customPrompt}"`;
+                const existingContentContext = Object.entries(appState.content).map(([key, value]) => `Bagian ${key}:\n${value.substring(0, 150)}...`).join('\n');
+                if (existingContentContext) prompt += `\nKonteks dari bagian yang sudah ada:\n${existingContentContext}`;
+
+                const markdownContent = await callGeminiAPI(prompt);
+                appState.content[title] = markdownContent;
+                appState.generatedMain.add(title);
+                
+                loaderSpot.innerHTML = '';
+                const currentIcon = button.querySelector('.status-icon');
+                if (currentIcon) {
+                    const newIcon = document.createElement('i');
+                    newIcon.setAttribute('data-lucide', 'check-circle-2');
+                    newIcon.className = 'w-4 h-4 text-green-400 status-icon';
+                    currentIcon.replaceWith(newIcon);
+                    lucide.createIcons();
+                }
+
+                button.classList.replace('dark:bg-slate-700', 'dark:bg-slate-800');
+
+                // Add preview card
+                const previewContainer = document.getElementById('manual-preview-container');
+                const card = document.createElement('div');
+                card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
+                card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output text-sm">${marked.parse(markdownContent)}</div>`;
+                previewContainer.appendChild(card);
+                
+                const mainContentButtons = Array.from(document.querySelectorAll('.manual-generate-btn'));
+                if (mainContentButtons.every(b => b.disabled)) {
+                    document.getElementById('manual-finalize-btn').disabled = false;
+                }
+            }
+            
+            async function finalizeManualDocument() {
+                const finalizeBtn = document.getElementById('manual-finalize-btn');
+                finalizeBtn.disabled = true;
+                finalizeBtn.innerHTML = `<div class="w-5 h-5 border-2 border-t-white border-slate-400 rounded-full animate-spin"></div><span>${translations[appSettings.language].loaderFinalizing}</span>`;
+
+                const otherSections = appState.toc.filter(title => !all_main_sections.includes(title));
+                if (otherSections.length > 0) {
+                    const fullMainContent = Object.entries(appState.content).map(([title, content]) => `# ${title}\n${content}`).join('\n\n---\n\n');
+                    const citationsPrompt = document.getElementById('include-citations').checked ? `Buat juga bagian Daftar Pustaka berdasarkan sitasi di konten utama, gaya ${document.getElementById('gaya_sitasi').value}.` : '';
+                    let prompt = `Berdasarkan konten utama berikut:\n\n${fullMainContent}\n\n---\nBuat bagian pelengkap ini: ${otherSections.join(', ')}. ${citationsPrompt}. Mulai SETIAP bagian dengan '# Judul Bagian'.`;
+                    if (otherSections.some(s => s.toLowerCase().includes('abstrak'))) prompt += getAbstractLanguagePrompt();
+                    
+                    const additionalContent = await callGeminiAPI(prompt);
+                    const sections = additionalContent.split(/^#\s/m).filter(s => s.trim());
+                    sections.forEach(section => {
+                        const lines = section.trim().split('\n');
+                        const title = lines.shift().trim();
+                        const content = lines.join('\n').trim();
+                        appState.content[title] = content;
+                    });
+                }
+                
+                ui.contentContainer.innerHTML = '';
+                appState.toc.forEach(title => {
+                    const content = appState.content[title];
+                    if (content) {
+                        const card = document.createElement('div');
+                        card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
+                        card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div>`;
+                        ui.contentContainer.appendChild(card);
+                    }
+                });
+                ui.exportButtons.classList.remove('hidden');
+            }
+
+            async function generateDocument_Otomatis() {
+                ui.loaderText.textContent = translations[appSettings.language].loaderCreating;
+                ui.loader.classList.remove('hidden');
+                
+                const docType = document.getElementById('jenis-dokumen').value;
+                const prompt = `Buat draf lengkap sebuah dokumen "${docType}" mengenai topik: "${document.getElementById('topik').value}". Ikuti struktur ini: ${doc_structures[docType].structure.join(', ')}. Mulai SETIAP bagian dengan heading level 1, contoh: '# Bab 1 Pendahuluan'. ${document.getElementById('include-citations').checked ? `Sertakan sitasi gaya ${document.getElementById('gaya_sitasi').value} dan Daftar Pustaka.` : 'Jangan sertakan sitasi.'}`;
+                
+                const fullMarkdown = await callGeminiAPI(prompt);
+                const sections = fullMarkdown.split(/^#\s/m).filter(s => s.trim());
+                if (sections.length === 0 && fullMarkdown.trim()) {
+                    sections.push("Generated Content\n" + fullMarkdown);
+                }
+                
+                sections.forEach(section => {
+                    const lines = section.trim().split('\n');
+                    const title = lines.shift().trim();
+                    const content = lines.join('\n').trim();
+                    appState.content[title] = content;
+                    appState.toc.push(title);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div>`;
+                    ui.contentContainer.appendChild(card);
+                });
+
+                ui.loader.classList.add('hidden');
+                ui.exportButtons.classList.remove('hidden');
+            }
+
+            // --- EVENT LISTENERS ---
+            ui.generateBtn.addEventListener('click', handleGeneration);
+            document.getElementById('jenis-dokumen').addEventListener('change', updateWorkflowUI);
+            document.getElementById('generation-mode').addEventListener('change', updateWorkflowUI);
+            document.getElementById('open-settings-btn').addEventListener('click', () => ui.settingsModal.classList.remove('hidden'));
+            document.getElementById('modal-close-btn').addEventListener('click', () => ui.settingsModal.classList.add('hidden'));
+            document.getElementById('setting-api-key-choice').addEventListener('change', (e) => { appSettings.apiKeyChoice = e.target.value; document.getElementById('setting-custom-api-key').classList.toggle('hidden', e.target.value !== 'custom'); saveSettings(); });
+            document.getElementById('setting-custom-api-key').addEventListener('input', (e) => { appSettings.customApiKey = e.target.value; saveSettings(); });
+            document.getElementById('setting-language').addEventListener('change', (e) => { appSettings.language = e.target.value; applyLanguage(e.target.value); saveSettings(); updateWorkflowUI(); });
+            document.getElementById('setting-theme').addEventListener('change', (e) => { appSettings.theme = e.target.value; applyTheme(e.target.value); saveSettings(); });
+            document.getElementById('setting-toc-dots').addEventListener('change', (e) => { appSettings.tocDots = e.target.checked; saveSettings(); });
+
+            // --- INITIAL SETUP ---
+            loadSettings();
+            updateWorkflowUI();
+        });
+    </script>
+</body>
+</html>
+
