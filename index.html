@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -8,8 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Marked.js for rendering Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- docx.js for reliable Word export -->
-    <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+    <!-- html-docx-js for client-side HTML to DOCX conversion -->
+    <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx-js.min.js"></script>
+    <!-- docx for direct Word creation -->
+    <script type="module">
+
+    </script>
     <!-- FileSaver.js for saving the docx file -->
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
     <!-- Google Fonts: Inter -->
@@ -35,6 +39,8 @@
         .prose-output p { margin-bottom: 1rem; line-height: 1.75; }
         .prose-output ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
         .prose-output ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; }
+        .prose-output strong { font-weight: bold; font-size: 1.1em; }
+        .prose-output em { font-style: italic; font-size: 1.05em; }
         
         #paraphrase-panel { transition: transform 0.3s ease-in-out, opacity 0.3s; }
         .toggle-btn[data-active="true"] { background-color: #4f46e5; color: white; }
@@ -61,8 +67,8 @@
                         <p class="text-sm text-slate-500 dark:text-slate-400" data-translate-key="appSubtitle">Intelligent Document Generator</p>
                     </div>
                 </div>
-                <button id="open-settings-btn" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400">
-                    <i data-lucide="settings" class="w-5 h-5"></i>
+                <button id="open-settings-btn" class="p-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <i data-lucide="settings" class="w-5 h-5"></i> <span>Pengaturan</span>
                 </button>
             </header>
 
@@ -83,7 +89,14 @@
                                 <option value="Makalah">Makalah</option>
                                 <option value="Jurnal Ilmiah">Jurnal Ilmiah</option>
                                 <option value="Artikel Ilmiah">Artikel Ilmiah</option>
+                                <option value="Tesis">Tesis</option>
+                                <option value="Disertasi">Disertasi</option>
+                                <option value="Custom">Custom</option>
                             </select>
+                        </div>
+                        <div id="custom-doc-type" class="hidden">
+                            <label for="custom-doc-name" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Nama Dokumen Custom</label>
+                            <input id="custom-doc-name" type="text" placeholder="Masukkan nama jenis dokumen custom..." class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
                         </div>
                         <div>
                             <label for="topik" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelTopic">3. Topik Utama</label>
@@ -103,21 +116,88 @@
                                 </div>
                             </div>
                         </div>
+                         <div>
+                            <label for="max-year" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">5. Max Tahun Penelitian</label>
+                            <input id="max-year" type="number" min="2000" max="2024" value="2024" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                        </div>
+                         <div>
+                            <label for="min-year" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">6. Min Tahun Penelitian</label>
+                            <input id="min-year" type="number" min="2000" max="2024" value="2010" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                        </div>
+                         <div>
+                            <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">7. Jenis Penelitian (Pilih satu atau lebih)</label>
+                            <div id="research-type-container" class="grid grid-cols-2 gap-2">
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-skripsi" type="checkbox" value="Skripsi" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500" checked>
+                                    <label for="research-type-skripsi" class="ml-2 text-sm">Skripsi</label>
+                                </div>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-makalah" type="checkbox" value="Makalah" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                    <label for="research-type-makalah" class="ml-2 text-sm">Makalah</label>
+                                </div>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-jurnal" type="checkbox" value="Jurnal Ilmiah" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                    <label for="research-type-jurnal" class="ml-2 text-sm">Jurnal Ilmiah</label>
+                                </div>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-artikel" type="checkbox" value="Artikel Ilmiah" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                    <label for="research-type-artikel" class="ml-2 text-sm">Artikel Ilmiah</label>
+                                </div>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-tesis" type="checkbox" value="Tesis" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                    <label for="research-type-tesis" class="ml-2 text-sm">Tesis</label>
+                                </div>
+                                <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md">
+                                    <input id="research-type-disertasi" type="checkbox" value="Disertasi" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                    <label for="research-type-disertasi" class="ml-2 text-sm">Disertasi</label>
+                                </div>
+                            </div>
+                        </div>
+                         <div>
+                            <label for="research-country" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">8. Negara Penelitian</label>
+                            <select id="research-country" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="Indonesia" selected>Indonesia</option>
+                                <option value="Global">Global</option>
+                                <option value="USA">USA</option>
+                                <option value="Jepang">Jepang</option>
+                                <option value="Eropa">Eropa</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="include-bab5" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">9. Opsi Bab 5</label>
+                            <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md whitespace-nowrap">
+                                <input id="include-bab5" type="checkbox" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                <label for="include-bab5" class="ml-2 text-sm">Sertakan Bab 5 (Penutup)</label>
+                            </div>
+                        </div>
+                         <div>
+                            <label for="include-lampiran" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">10. Opsi Lampiran</label>
+                            <div class="flex items-center p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md whitespace-nowrap">
+                                <input id="include-lampiran" type="checkbox" class="h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500">
+                                <label for="include-lampiran" class="ml-2 text-sm">Sertakan Daftar Lampiran dan Lampiran</label>
+                            </div>
+                        </div>
                     </div>
                 </fieldset>
 
                 <!-- Dynamic Options Container -->
                 <div id="manual-mode-options" class="hidden">
                      <fieldset>
-                        <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelSelectSections">5. Pilih Bagian Dokumen</legend>
+                        <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelSelectSections">9. Pilih Bagian Dokumen</legend>
+                        <div class="flex gap-2 mb-4">
+                            <button id="select-all-btn" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 text-sm">Pilih Semua</button>
+                            <button id="deselect-all-btn" class="bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-gray-700 text-sm">Batal Semua</button>
+                        </div>
                         <div id="manual-sections-container" class="space-y-2 text-sm"></div>
                     </fieldset>
                      <fieldset id="manual-custom-prompts-container" class="hidden mt-4">
-                         <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelCustomPrompts">6. Instruksi Kustom (Opsional)</legend>
+                         <legend class="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2" data-translate-key="labelCustomPrompts">10. Instruksi Kustom (Opsional)</legend>
                          <div id="manual-custom-prompts-wrapper" class="space-y-3"></div>
                     </fieldset>
                 </div>
-                
+
+
+
                 <div class="pt-4">
                     <button type="button" id="generate-btn" class="w-full bg-teal-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-teal-700 flex items-center justify-center gap-2">
                         <i id="generate-btn-icon" data-lucide="file-pen-line" class="w-5 h-5"></i>
@@ -137,6 +217,9 @@
                     </button>
                     <button id="export-docx-btn" class="bg-blue-600 text-white hover:bg-blue-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
                         <i data-lucide="file-down" class="w-4 h-4"></i><span data-translate-key="btnExport">Export .docx</span>
+                    </button>
+                    <button id="create-word-btn" class="bg-purple-600 text-white hover:bg-purple-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="file" class="w-4 h-4"></i><span>Buat Word</span>
                     </button>
                 </div>
                  <div id="copy-feedback" class="hidden fixed top-5 right-5 bg-slate-800 text-white text-sm px-3 py-1 rounded-md z-50" data-translate-key="feedbackCopied">Teks disalin!</div>
@@ -158,7 +241,9 @@
                     <button id="btn_custom" class="relative flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500 text-sm">
                         <i data-lucide="sliders" class="w-4 h-4"></i><span data-translate-key="paraphraseCustom">Kustom</span><div id="custom-indicator" class="hidden absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full border border-slate-800"></div></button>
                     <div class="border-l border-slate-400 dark:border-slate-500 h-6 mx-1"></div>
-                    <button id="btn_paraphrase" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 text-sm flex-grow" data-translate-key="btnParaphrase">Parafrasekan</button>
+                    <button id="btn_paraphrase" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700 text-sm" data-translate-key="btnParaphrase">Parafrasekan</button>
+                    <button id="btn_regenerate_paraphrase" class="bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 text-sm">Buat Ulang</button>
+                    <button id="btn_expand" class="bg-purple-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-purple-700 text-sm">Perbanyak Kata</button>
                 </div>
             </div>
         </div>
@@ -244,11 +329,22 @@
             const doc_structures = {
                  "Skripsi": { structure: ["Judul", "Halaman Pengesahan", "Abstrak", "Kata Pengantar", "Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi Penelitian", "Bab 4 Hasil dan Pembahasan", "Bab 5 Penutup", "Daftar Pustaka", "Lampiran"] },
                  "Makalah": { structure: ["Judul", "Kata Pengantar", "Daftar Isi", "Abstrak + Kata Kunci", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi", "Bab 4 Hasil dan Pembahasan", "Bab 5 Penutup", "Daftar Pustaka"] },
-                 "Jurnal Ilmiah": { structure: ["Judul", "Abstrak + Kata Kunci", "Pendahuluan", "Kajian Pustaka", "Metodologi", "Bab 4 Hasil", "Bab 5 Pembahasan", "Kesimpulan", "Daftar Pustaka"] },
-                 "Artikel Ilmiah": { structure: ["Judul", "Abstrak", "Pendahuluan", "Isi / Pembahasan", "Penutup", "Daftar Pustaka"] }
+                 "Jurnal Ilmiah": { structure: ["Judul", "Abstrak + Kata Kunci", "Pendahuluan", "Kajian Pustaka", "Metodologi", "Hasil", "Pembahasan", "Kesimpulan", "Daftar Pustaka"] },
+                 "Artikel Ilmiah": { structure: ["Judul", "Abstrak", "Pendahuluan", "Isi / Pembahasan", "Penutup", "Daftar Pustaka"] },
+                 "Tesis": { structure: ["Judul", "Halaman Pengesahan", "Abstrak", "Kata Pengantar", "Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi Penelitian", "Bab 4 Hasil Penelitian", "Bab 5 Pembahasan", "Bab 6 Kesimpulan dan Saran", "Daftar Pustaka", "Lampiran"] },
+                 "Disertasi": { structure: ["Judul", "Halaman Pengesahan", "Abstrak", "Kata Pengantar", "Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi Penelitian", "Bab 4 Hasil Penelitian", "Bab 5 Pembahasan", "Bab 6 Kesimpulan dan Saran", "Bab 7 Rekomendasi", "Daftar Pustaka", "Lampiran", "Riwayat Hidup"] },
+                 "Custom": { structure: ["Judul", "Abstrak", "Bab 1 Pendahuluan", "Bab 2 Kajian Pustaka", "Bab 3 Metodologi", "Bab 4 Hasil dan Pembahasan", "Bab 5 Penutup", "Daftar Pustaka"] }
             };
-            const all_main_sections = [ "Pendahuluan", "Bab 1 Pendahuluan", "Kajian Pustaka", "Bab 2 Kajian Pustaka", "Metodologi", "Bab 3 Metodologi", "Bab 3 Metodologi Penelitian", "Hasil dan Pembahasan", "Bab 4 Hasil dan Pembahasan", "Bab 4 Hasil", "Bab 5 Pembahasan", "Pembahasan", "Isi / Pembahasan", "Kesimpulan", "Penutup", "Bab 5 Penutup", "Abstrak", "Abstrak + Kata Kunci"];
-            
+            const all_main_sections = [ "Pendahuluan", "Bab 1 Pendahuluan", "Kajian Pustaka", "Bab 2 Kajian Pustaka", "Metodologi", "Bab 3 Metodologi", "Bab 3 Metodologi Penelitian", "Hasil dan Pembahasan", "Bab 4 Hasil dan Pembahasan", "Bab 4 Hasil", "Bab 5 Pembahasan", "Bab 5 Penutup", "Bab 6 Kesimpulan dan Saran", "Bab 7 Rekomendasi", "Pembahasan", "Isi / Pembahasan", "Kesimpulan", "Penutup", "Abstrak", "Abstrak + Kata Kunci"];
+
+            function getEffectiveDocType() {
+                const docType = document.getElementById('jenis-dokumen').value;
+                if (docType === 'Custom') {
+                    return document.getElementById('custom-doc-name').value.trim() || 'Custom Document';
+                }
+                return docType;
+            }
+
             let appState = { content: {}, toc: [] };
             let appSettings = {};
             
@@ -267,12 +363,13 @@
             // --- SETTINGS MANAGEMENT ---
             const loadSettings = () => {
                 const savedSettings = JSON.parse(localStorage.getItem('autoBabSettings_v5')) || {};
-                appSettings = {
+            appSettings = {
                     apiKeyChoice: savedSettings.apiKeyChoice || 'default1',
                     customApiKey: savedSettings.customApiKey || '',
                     language: savedSettings.language || 'id',
                     theme: savedSettings.theme || 'dark',
                     tocDots: savedSettings.tocDots === true,
+                    customParaphrasePrompt: savedSettings.customParaphrasePrompt || '',
                 };
                 applySettings();
             };
@@ -316,7 +413,7 @@
                     return `### Kesalahan Konfigurasi\n\nAPI Key belum diatur atau tidak valid.`;
                 }
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                const systemInstructionText = `Anda adalah asisten AI akademis. Gunakan Bahasa Indonesia yang baik dan benar. Tulis konten untuk bagian yang diminta berdasarkan topik. ${document.getElementById('include-citations').checked ? `Sisipkan sitasi (${document.getElementById('gaya_sitasi').value}: Nama, Tahun) jika perlu.` : ''} JANGAN membuat daftar pustaka kecuali diminta secara eksplisit. Fokus hanya pada konten bagian yang diminta. Mulai respons Anda LANGSUNG dengan konten.`;
+                const systemInstructionText = `Anda adalah asisten AI akademis. Gunakan Bahasa Indonesia yang baik dan benar. Tulis konten untuk bagian yang diminta berdasarkan topik. Gunakan **teks** untuk menekankan kata atau frasa penting, yang akan ditampilkan dengan ukuran huruf sedang. Pastikan formatting markdown benar, seperti **teks tebal** tanpa spasi di sekitar tanda **. ${document.getElementById('include-citations').checked ? `Sisipkan sitasi (${document.getElementById('gaya_sitasi').value}: Nama, Tahun) jika perlu.` : ''} JANGAN membuat daftar pustaka kecuali diminta secara eksplisit. Fokus hanya pada konten bagian yang diminta. Mulai respons Anda LANGSUNG dengan konten.`;
                 const payload = {
                     contents: [{ parts: [{ text: prompt }] }],
                     systemInstruction: { parts: [{ text: systemInstructionText }] }
@@ -352,7 +449,22 @@
                 resetStateAndUI();
                 ui.generateBtn.disabled = false;
                 const mode = document.getElementById('generation-mode').value;
+                const docType = document.getElementById('jenis-dokumen').value;
                 ui.manualModeOptions.classList.toggle('hidden', mode === 'otomatis');
+
+                // Show custom input if Custom selected
+                const customDiv = document.getElementById('custom-doc-type');
+                customDiv.classList.toggle('hidden', docType !== 'Custom');
+
+                // Auto-update Bab 5 option based on doc type
+                const bab5Checkbox = document.getElementById('include-bab5');
+                const bab5Div = bab5Checkbox.parentElement;
+                if (docType === 'Jurnal Ilmiah' || docType === 'Artikel Ilmiah') {
+                    bab5Div.classList.add('hidden');
+                    bab5Checkbox.checked = true; // Always include for these types
+                } else {
+                    bab5Div.classList.remove('hidden');
+                }
 
                 if (mode === 'otomatis') {
                     ui.btnText.dataset.translateKey = 'btnGenerate';
@@ -362,20 +474,45 @@
                     ui.generateBtnIcon.setAttribute('data-lucide', 'git-commit-vertical');
                     updateManualChecklist();
                 }
-                applyLanguage(appSettings.language); 
+                applyLanguage(appSettings.language);
                 lucide.createIcons();
             }
 
-            function updateManualChecklist() { 
+            function updateManualChecklist() {
                 const docType = document.getElementById('jenis-dokumen').value;
-                const allSectionsFlat = doc_structures[docType].structure;
+                const includeBab5 = document.getElementById('include-bab5').checked;
+                const includeLampiran = document.getElementById('include-lampiran').checked;
+                let allSectionsFlat = doc_structures[docType].structure.filter(s => includeBab5 || !s.includes('Bab 5'));
+                if (includeLampiran) {
+                    const daftarIsiIndex = allSectionsFlat.findIndex(s => s.includes('Daftar Isi'));
+                    if (daftarIsiIndex > -1) {
+                        allSectionsFlat.splice(daftarIsiIndex + 1, 0, 'Daftar Lampiran');
+                    } else {
+                        allSectionsFlat.push('Daftar Lampiran');
+                    }
+                    allSectionsFlat.push('Lampiran');
+                }
+
+                // Adjust structure if Bab 5 not included for Skripsi and Makalah
+                if (!includeBab5 && (docType === 'Skripsi' || docType === 'Makalah')) {
+                    const bab3Index = allSectionsFlat.findIndex(s => s.includes('Bab 3 Metodologi'));
+                    const bab4Index = allSectionsFlat.findIndex(s => s.includes('Bab 4 Hasil'));
+                    const bab5Index = allSectionsFlat.findIndex(s => s.includes('Bab 5'));
+                    if (bab3Index !== -1 && bab4Index !== -1) {
+                        allSectionsFlat[bab3Index] = 'Bab 3 Metodologi dan Hasil';
+                        allSectionsFlat[bab4Index] = 'Bab 4 Penutup';
+                        if (bab5Index !== -1) allSectionsFlat.splice(bab5Index, 1);
+                    }
+                }
+
                 ui.manualSectionsContainer.innerHTML = '';
                 ui.manualCustomPromptsWrapper.innerHTML = '';
                 let hasMainContent = false;
                 allSectionsFlat.forEach(item => {
-                    const sectionTitle = typeof item === 'string' ? item : item.section;
+                    let sectionTitle = typeof item === 'string' ? item : item.section;
+                    const originalTitle = sectionTitle;
                     const sectionId = sectionTitle.replace(/[^a-zA-Z0-9]/g, '-');
-                    
+
                     let controls = '';
                     if(sectionTitle.toLowerCase().includes('abstrak')) {
                         controls = `<select id="manual-abstract-lang" class="ml-auto text-xs p-1 border-slate-400 dark:border-slate-500 bg-white dark:bg-slate-600 rounded-md shadow-sm">
@@ -385,9 +522,12 @@
                                     </select>`;
                     }
 
-                    ui.manualSectionsContainer.innerHTML += `<div class="flex items-center p-2 bg-white dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600"><input id="manual-check-${sectionId}" type="checkbox" data-section-title="${sectionTitle}" class="section-check h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500" checked><label for="manual-check-${sectionId}" class="ml-3 text-slate-700 dark:text-slate-200">${sectionTitle}</label>${controls}</div>`;
-                    
-                    if (all_main_sections.includes(sectionTitle)) {
+                    const isBab5 = sectionTitle.includes('Bab 5');
+                    if (!includeBab5 && isBab5) return; // Skip Bab 5 if not included
+
+                    ui.manualSectionsContainer.innerHTML += `<div class="flex items-center p-2 bg-white dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-600 ${isBab5 ? 'hidden bab5-item' : ''}"><input type="checkbox" class="section-check h-4 w-4 text-teal-500 rounded bg-slate-200 dark:bg-slate-600 border-slate-400 dark:border-slate-500" data-section-title="${sectionTitle}" data-original-title="${originalTitle}" checked><label class="ml-3 text-slate-700 dark:text-slate-200">${sectionTitle}</label>${controls}</div>`;
+
+                    if (sectionTitle.startsWith('Bab') || all_main_sections.includes(originalTitle) || all_main_sections.includes(sectionTitle)) {
                         hasMainContent = true;
                         ui.manualCustomPromptsWrapper.innerHTML += `<div id="prompt-container-${sectionId}" class="custom-prompt-item"><label for="prompt-${sectionId}" class="text-sm font-medium text-slate-600 dark:text-slate-300">Instruksi ${sectionTitle}:</label><textarea id="prompt-${sectionId}" rows="2" class="w-full text-sm p-2 mt-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" placeholder="Opsional..."></textarea></div>`;
                     }
@@ -406,6 +546,11 @@
                 const topic = document.getElementById('topik').value.trim();
                 if (!topic) {
                     alert("Topik utama tidak boleh kosong.");
+                    return;
+                }
+                const apiKey = getActiveApiKey();
+                if (!apiKey) {
+                    alert("Kunci API tidak valid. Silakan periksa Pengaturan.");
                     return;
                 }
                 ui.generateBtn.disabled = true;
@@ -437,9 +582,14 @@
                 const mainContentSections = allSelectedSections.filter(title => all_main_sections.includes(title));
                 const otherSections = allSelectedSections.filter(title => !all_main_sections.includes(title));
 
+                // Sort mainContentSections by predefined order
+                const sectionOrder = ['Judul', 'Halaman Pengesahan', 'Abstrak', 'Kata Pengantar', 'Daftar Isi', 'Daftar Tabel', 'Daftar Gambar', 'Bab 1 Pendahuluan', 'Bab 2 Kajian Pustaka', 'Bab 3 Metodologi Penelitian', 'Bab 4 Hasil dan Pembahasan', 'Bab 5 Penutup', 'Daftar Pustaka', 'Lampiran'];
+                mainContentSections.sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b));
+
                 let html = `<div class="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-900/50"><h3 class="font-bold mb-3 text-slate-800 dark:text-slate-200" data-translate-key="manualStepTitle"></h3><p class="text-sm text-slate-500 dark:text-slate-400 mb-4" data-translate-key="manualStepSubtitle"></p><div id="manual-buttons-container" class="space-y-2">`;
-                mainContentSections.forEach(title => {
-                    html += `<button data-section-title="${title}" class="manual-generate-btn w-full text-left p-3 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md text-sm font-medium flex items-center justify-between transition-all duration-200 border border-slate-200 dark:border-slate-600"><span class="flex items-center gap-3"><i data-lucide="circle" class="w-4 h-4 text-slate-400 status-icon"></i><span>${title}</span></span><span class="loader-spot"></span></button>`;
+                mainContentSections.forEach((title, index) => {
+                    const disabled = index > 0 ? 'disabled' : '';
+                    html += `<button data-section-title="${title}" class="manual-generate-btn w-full text-left p-3 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md text-sm font-medium flex items-center justify-between transition-all duration-200 border border-slate-200 dark:border-slate-600 ${disabled}" ${disabled}><span class="flex items-center gap-3"><i data-lucide="circle" class="w-4 h-4 text-slate-400 status-icon"></i><span>${title}</span></span><span class="loader-spot"></span></button>`;
                 });
                 html += `</div><button id="manual-finalize-btn" disabled class="w-full mt-4 bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-teal-700 disabled:bg-slate-500 dark:disabled:bg-slate-600 disabled:cursor-not-allowed flex items-center justify-center gap-2"><i data-lucide="wand-2" class="w-5 h-5"></i><span>${translations[appSettings.language].manualFinalizeBtn} (${otherSections.length} ${translations[appSettings.language].manualPartsRemaining})</span></button><div id="manual-preview-container" class="mt-4 space-y-4"></div></div>`;
                 
@@ -461,7 +611,12 @@
                 
                 loaderSpot.innerHTML = `<div class="w-4 h-4 border-2 border-t-teal-400 border-slate-500 rounded-full animate-spin"></div>`;
 
-                let prompt = `Topik utama: "${document.getElementById('topik').value}". Buat konten untuk bagian "${title}" dari sebuah dokumen "${document.getElementById('jenis-dokumen').value}".`;
+                const effectiveDocType = getEffectiveDocType();
+                const maxYear = document.getElementById('max-year').value;
+                const minYear = document.getElementById('min-year').value;
+                const researchType = Array.from(document.querySelectorAll('#research-type-container input:checked')).map(cb => cb.value).join(', ');
+                const country = document.getElementById('research-country').value;
+                let prompt = `Topik utama: "${document.getElementById('topik').value}". Buat konten untuk bagian "${title}" dari sebuah dokumen "${effectiveDocType}". Gunakan referensi penelitian dari tahun ${minYear} hingga ${maxYear} dari negara ${country}, jenis penelitian ${researchType}.`;
                 if (title.toLowerCase().includes('abstrak')) { prompt += getAbstractLanguagePrompt(); }
                 const customPrompt = document.getElementById(`prompt-${title.replace(/[^a-zA-Z0-9]/g, '-')}`)?.value || '';
                 if(customPrompt) prompt += `\nInstruksi tambahan: "${customPrompt}"`;
@@ -483,6 +638,13 @@
                 }
 
                 button.classList.replace('dark:bg-slate-700', 'dark:bg-slate-800');
+
+                // Enable next button
+                const buttons = document.querySelectorAll('.manual-generate-btn');
+                const currentIndex = Array.from(buttons).findIndex(btn => btn.dataset.sectionTitle === title);
+                if (currentIndex < buttons.length - 1) {
+                    buttons[currentIndex + 1].disabled = false;
+                }
 
                 // Add preview card
                 const previewContainer = document.getElementById('manual-preview-container');
@@ -506,7 +668,12 @@
                 if (otherSections.length > 0) {
                     const fullMainContent = Object.entries(appState.content).map(([title, content]) => `# ${title}\n${content}`).join('\n\n---\n\n');
                     const citationsPrompt = document.getElementById('include-citations').checked ? `Buat juga bagian Daftar Pustaka berdasarkan sitasi di konten utama, gaya ${document.getElementById('gaya_sitasi').value}.` : '';
-                    let prompt = `Berdasarkan konten utama berikut:\n\n${fullMainContent}\n\n---\nBuat bagian pelengkap ini: ${otherSections.join(', ')}. ${citationsPrompt}. Mulai SETIAP bagian dengan '# Judul Bagian'.`;
+                    const effectiveDocType = getEffectiveDocType();
+                    const maxYear = document.getElementById('max-year').value;
+                    const minYear = document.getElementById('min-year').value;
+                    const researchType = Array.from(document.querySelectorAll('#research-type-container input:checked')).map(cb => cb.value).join(', ');
+                    const country = document.getElementById('research-country').value;
+                    let prompt = `Berdasarkan konten utama berikut:\n\n${fullMainContent}\n\n---\nBuat bagian pelengkap ini: ${otherSections.join(', ')}. Gunakan referensi penelitian dari tahun ${minYear} hingga ${maxYear} dari negara ${country}, jenis penelitian ${researchType}. ${citationsPrompt}. Mulai SETIAP bagian dengan '# Judul Bagian'.`;
                     if (otherSections.some(s => s.toLowerCase().includes('abstrak'))) prompt += getAbstractLanguagePrompt();
                     
                     const additionalContent = await callGeminiAPI(prompt);
@@ -523,10 +690,10 @@
                 appState.toc.forEach(title => {
                     const content = appState.content[title];
                     if (content) {
-                        const card = document.createElement('div');
-                        card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
-                        card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div>`;
-                        ui.contentContainer.appendChild(card);
+                    const card = document.createElement('div');
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div><div class="mt-4 flex gap-2"><button class="regenerate-btn px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Generate Ulang</button><button class="paraphrase-btn px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">Parafrase</button><button class="expand-btn px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">Perbanyak</button></div>`;
+                    ui.contentContainer.appendChild(card);
                     }
                 });
                 ui.exportButtons.classList.remove('hidden');
@@ -535,44 +702,463 @@
             async function generateDocument_Otomatis() {
                 ui.loaderText.textContent = translations[appSettings.language].loaderCreating;
                 ui.loader.classList.remove('hidden');
-                
+
                 const docType = document.getElementById('jenis-dokumen').value;
-                const prompt = `Buat draf lengkap sebuah dokumen "${docType}" mengenai topik: "${document.getElementById('topik').value}". Ikuti struktur ini: ${doc_structures[docType].structure.join(', ')}. Mulai SETIAP bagian dengan heading level 1, contoh: '# Bab 1 Pendahuluan'. ${document.getElementById('include-citations').checked ? `Sertakan sitasi gaya ${document.getElementById('gaya_sitasi').value} dan Daftar Pustaka.` : 'Jangan sertakan sitasi.'}`;
-                
+                const effectiveDocType = getEffectiveDocType();
+                const includeBab5 = document.getElementById('include-bab5').checked;
+                const includeLampiran = document.getElementById('include-lampiran').checked;
+                const maxYear = document.getElementById('max-year').value;
+                const minYear = document.getElementById('min-year').value;
+                const researchType = Array.from(document.querySelectorAll('#research-type-container input:checked')).map(cb => cb.value).join(', ');
+                const country = document.getElementById('research-country').value;
+                let structure = doc_structures[docType].structure.filter(s => includeBab5 || !s.includes('Bab 5'));
+                if (includeLampiran) {
+                    const daftarIsiIndex = structure.findIndex(s => s.includes('Daftar Isi'));
+                    if (daftarIsiIndex > -1) {
+                        structure.splice(daftarIsiIndex + 1, 0, 'Daftar Lampiran');
+                    } else {
+                        structure.push('Daftar Lampiran');
+                    }
+                    structure.push('Lampiran');
+                }
+                const prompt = `Buat draf lengkap sebuah dokumen "${effectiveDocType}" mengenai topik: "${document.getElementById('topik').value}". Ikuti struktur ini: ${structure.join(', ')}. Mulai SETIAP bagian dengan heading level 1 yang persis sama dengan judul dalam struktur, contoh: '# Bab 1 Pendahuluan'. Gunakan referensi penelitian dari tahun ${minYear} hingga ${maxYear} dari negara ${country}, jenis penelitian ${researchType}. ${document.getElementById('include-citations').checked ? `Sertakan sitasi gaya ${document.getElementById('gaya_sitasi').value} dan Daftar Pustaka.` : 'Jangan sertakan sitasi.'} ${!includeBab5 ? 'Karena Bab 5 tidak disertakan, sesuaikan konten Bab 1-4 agar mencakup kesimpulan atau penutup di Bab 4.' : ''}`;
+
                 const fullMarkdown = await callGeminiAPI(prompt);
                 const sections = fullMarkdown.split(/^#\s/m).filter(s => s.trim());
                 if (sections.length === 0 && fullMarkdown.trim()) {
                     sections.push("Generated Content\n" + fullMarkdown);
                 }
-                
+
                 sections.forEach(section => {
                     const lines = section.trim().split('\n');
                     const title = lines.shift().trim();
                     const content = lines.join('\n').trim();
                     appState.content[title] = content;
                     appState.toc.push(title);
-                    
+
                     const card = document.createElement('div');
-                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
-                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div>`;
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in mb-4';
+                    card.dataset.sectionTitle = title;
+                    card.innerHTML = `
+                        <h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3>
+                        <div class="prose-output mb-3" id="content-${title.replace(/[^a-zA-Z0-9]/g, '-')}">${marked.parse(content)}</div>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="regenerate-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Generate Ulang</button>
+                            <button class="paraphrase-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Parafrase</button>
+                            <button class="expand-btn bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Perbanyak Kata</button>
+                        </div>
+                    `;
                     ui.contentContainer.appendChild(card);
+                });
+
+                // Add event listeners for section buttons
+                ui.contentContainer.addEventListener('click', async (e) => {
+                    if (e.target.classList.contains('regenerate-btn')) {
+                        const sectionTitle = e.target.dataset.section;
+                        await regenerateSection(sectionTitle);
+                    } else if (e.target.classList.contains('paraphrase-btn')) {
+                        const sectionTitle = e.target.dataset.section;
+                        await paraphraseSection(sectionTitle);
+                    } else if (e.target.classList.contains('expand-btn')) {
+                        const sectionTitle = e.target.dataset.section;
+        const numParts = prompt('Bagi menjadi berapa bagian? (1-10):');
+        if (numParts && !isNaN(numParts) && numParts >= 1 && numParts <= 10) {
+            await expandSection(sectionTitle, parseInt(numParts));
+        }
+                    }
                 });
 
                 ui.loader.classList.add('hidden');
                 ui.exportButtons.classList.remove('hidden');
             }
 
+            async function regenerateSection(sectionTitle) {
+                try {
+                    const currentContent = appState.content[sectionTitle];
+                    const prompt = `Buat ulang bagian ini dengan konten yang lebih baik dan lebih lengkap: "${currentContent}"`;
+                    const newContent = await callGeminiAPI(prompt);
+                    appState.content[sectionTitle] = newContent;
+                    // Update the UI
+                    const card = Array.from(document.querySelectorAll('.section-card')).find(card => card.querySelector('h3').textContent.trim() === sectionTitle);
+                    const proseOutput = card.querySelector('.prose-output');
+                    proseOutput.innerHTML = marked.parse(newContent);
+                } catch (e) {
+                    alert('Error regenerating section: ' + e.message);
+                }
+            }
+
+            async function paraphraseSection(sectionTitle) {
+                const content = appState.content[sectionTitle];
+                if (!content) {
+                    alert('Konten tidak ditemukan.');
+                    return;
+                }
+                ui.loaderText.textContent = `Memparafrase ${sectionTitle}...`;
+                ui.loader.classList.remove('hidden');
+                const prompt = `Parafrase teks berikut dengan kata-kata sendiri, jaga makna asli dan struktur akademis: ${content}`;
+                const newContent = await callGeminiAPI(prompt);
+                const sectionId = sectionTitle.replace(/[^a-zA-Z0-9]/g, '-');
+                const contentDiv = document.getElementById(`content-${sectionId}`);
+                if (contentDiv) {
+                    contentDiv.innerHTML = marked.parse(newContent);
+                    appState.content[sectionTitle] = newContent;
+                }
+                ui.loader.classList.add('hidden');
+            }
+
+            async function expandSection(sectionTitle, numParts) {
+                const content = appState.content[sectionTitle];
+                if (!content) {
+                    alert('Konten tidak ditemukan.');
+                    return;
+                }
+                ui.loaderText.textContent = `Membuat ringkasan dan ${numParts} bagian...`;
+                ui.loader.classList.remove('hidden');
+                // Generate summary
+                const summaryPrompt = `Ringkas teks ini dalam beberapa poin utama: ${content}`;
+                const summary = await callGeminiAPI(summaryPrompt);
+                // Generate N expanded parts
+                const parts = [];
+                for (let i = 1; i <= numParts; i++) {
+                    const partPrompt = `Ringkasan: "${summary}". Buat bagian ${i} dari ${numParts} yang merupakan perluasan lengkap dari ringkasan ini dengan detail akademis, struktur yang baik, dan contoh jika diperlukan.`;
+                    const part = await callGeminiAPI(partPrompt);
+                    parts.push(part);
+                }
+                // Update UI
+                const card = Array.from(document.querySelectorAll('.section-card')).find(card => card.querySelector('h3').textContent.trim() === sectionTitle);
+                const proseOutput = card.querySelector('.prose-output');
+                proseOutput.innerHTML = `<div class="summary mb-4"><strong>Ringkasan:</strong> ${marked.parse(summary)}</div>`;
+                const partsContainer = document.createElement('div');
+                partsContainer.className = 'parts-container';
+                parts.forEach((part, index) => {
+                    const partDiv = document.createElement('div');
+                    partDiv.className = 'part mb-4 p-2 border rounded';
+                    partDiv.innerHTML = `<h4>Bagian ${index + 1}</h4>${marked.parse(part)}`;
+                    partsContainer.appendChild(partDiv);
+                });
+                proseOutput.appendChild(partsContainer);
+                const combineBtn = document.createElement('button');
+                combineBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mt-4';
+                combineBtn.textContent = 'Gabungkan Semua';
+                combineBtn.addEventListener('click', () => {
+                    const combined = summary + '\n\n' + parts.join('\n\n');
+                    appState.content[sectionTitle] = combined;
+                    proseOutput.innerHTML = marked.parse(combined);
+                });
+                proseOutput.appendChild(combineBtn);
+                ui.loader.classList.add('hidden');
+            }
+
+            function parseInline(text) {
+                const boldRegex = /\*\*(.*?)\*\*/g;
+                const parts = [];
+                let lastIndex = 0;
+                let match;
+                while ((match = boldRegex.exec(text)) !== null) {
+                    if (match.index > lastIndex) {
+                        parts.push(new TextRun({ text: text.substring(lastIndex, match.index) }));
+                    }
+                    parts.push(new TextRun({ text: match[1], bold: true }));
+                    lastIndex = match.index + match[0].length;
+                }
+                if (lastIndex < text.length) {
+                    parts.push(new TextRun({ text: text.substring(lastIndex) }));
+                }
+                return parts.length > 0 ? parts : [new TextRun({ text })];
+            }
+
+            async function createWordFromContent(title = null) {
+                if (Object.keys(appState.content).length === 0) {
+                    alert('Tidak ada konten untuk dibuat Word. Silakan generate dokumen terlebih dahulu.');
+                    return;
+                }
+                if (!title) {
+                    title = prompt('Masukkan judul untuk file Word:');
+                }
+                if (!title) return;
+                const orderedContent = appState.toc.map(title => `# ${title}\n\n${appState.content[title]}`).join('\n\n');
+                const docx = await import('https://cdn.jsdelivr.net/npm/docx@8.0.1/+esm');
+                const { Document, Packer, Paragraph, TextRun } = docx;
+                const doc = new Document({
+                    sections: [{
+                        children: [new Paragraph({ children: [new TextRun(orderedContent)] })]
+                    }]
+                });
+                const blob = await Packer.toBlob(doc);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.docx`;
+                link.click();
+            }
+
+            function copyAllContent() {
+                if (Object.keys(appState.content).length === 0) {
+                    alert('Tidak ada konten untuk disalin.');
+                    return;
+                }
+                const orderedContent = appState.toc.map(title => `# ${title}\n\n${appState.content[title]}`).join('\n\n');
+                navigator.clipboard.writeText(orderedContent).then(() => {
+                    const feedback = document.getElementById('copy-feedback');
+                    feedback.classList.remove('hidden');
+                    setTimeout(() => feedback.classList.add('hidden'), 2000);
+                }).catch(err => {
+                    alert('Gagal menyalin teks: ' + err);
+                });
+            }
+
             // --- EVENT LISTENERS ---
             ui.generateBtn.addEventListener('click', handleGeneration);
+            document.getElementById('create-word-btn').addEventListener('click', createWordFromContent);
+            document.getElementById('copy-all-btn').addEventListener('click', copyAllContent);
             document.getElementById('jenis-dokumen').addEventListener('change', updateWorkflowUI);
             document.getElementById('generation-mode').addEventListener('change', updateWorkflowUI);
+            document.getElementById('include-bab5').addEventListener('change', updateManualChecklist);
+            document.getElementById('include-lampiran').addEventListener('change', updateManualChecklist);
+            document.getElementById('select-all-btn').addEventListener('click', () => {
+                document.querySelectorAll('#manual-sections-container .section-check').forEach(cb => cb.checked = true);
+            });
+            document.getElementById('deselect-all-btn').addEventListener('click', () => {
+                document.querySelectorAll('#manual-sections-container .section-check').forEach(cb => cb.checked = false);
+            });
             document.getElementById('open-settings-btn').addEventListener('click', () => ui.settingsModal.classList.remove('hidden'));
             document.getElementById('modal-close-btn').addEventListener('click', () => ui.settingsModal.classList.add('hidden'));
+            document.getElementById('copy-all-btn').addEventListener('click', () => {
+                if (Object.keys(appState.content).length === 0) {
+                    alert('Tidak ada konten untuk disalin. Silakan generate dokumen terlebih dahulu.');
+                    return;
+                }
+                const allContent = Object.entries(appState.content).map(([title, content]) => `# ${title}\n\n${content}`).join('\n\n');
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(allContent).then(() => {
+                        ui.copyFeedback.classList.remove('hidden');
+                        setTimeout(() => ui.copyFeedback.classList.add('hidden'), 2000);
+                    }).catch(err => {
+                        console.error('Failed to copy: ', err);
+                        fallbackCopyToClipboard(allContent);
+                    });
+                } else {
+                    fallbackCopyToClipboard(allContent);
+                }
+            });
+
+            function fallbackCopyToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    ui.copyFeedback.classList.remove('hidden');
+                    setTimeout(() => ui.copyFeedback.classList.add('hidden'), 2000);
+                } catch (err) {
+                    console.error('Fallback copy failed: ', err);
+                    alert('Gagal menyalin. Silakan salin manual.');
+                }
+                document.body.removeChild(textArea);
+            }
+            document.getElementById('export-docx-btn').addEventListener('click', () => {
+                if (Object.keys(appState.content).length === 0) {
+                    alert('Tidak ada konten untuk diekspor. Silakan generate dokumen terlebih dahulu.');
+                    return;
+                }
+                if (typeof htmlDocx === 'undefined' || typeof saveAs === 'undefined') {
+                    // Fallback to HTML export if DOCX library not loaded
+                    exportAsHtml();
+                    return;
+                }
+                try {
+                    let htmlContent = '<html><head><style>body { font-family: Arial, sans-serif; } h1 { font-size: 18pt; font-weight: bold; margin-top: 24pt; } h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; } p { margin-bottom: 12pt; line-height: 1.5; }</style></head><body>';
+                    for (const title of appState.toc) {
+                        const content = appState.content[title];
+                        htmlContent += `<h1>${title}</h1><div>${marked.parse(content)}</div>`;
+                    }
+                    htmlContent += '</body></html>';
+                    htmlDocx.asBlob(htmlContent).then(blob => {
+                        saveAs(blob, 'document.docx');
+                    }).catch(err => {
+                        console.error('Export failed: ', err);
+                        alert('Gagal mengekspor DOCX. Menggunakan fallback HTML...');
+                        exportAsHtml();
+                    });
+                } catch (err) {
+                    console.error('DOCX creation error: ', err);
+                    alert('Error membuat DOCX. Menggunakan fallback HTML...');
+                    exportAsHtml();
+                }
+            });
+
+            function exportAsHtml() {
+                let htmlContent = '<!DOCTYPE html><html><head><title>Dokumen AutoBab</title><style>body { font-family: Arial, sans-serif; margin: 40px; } h1 { font-size: 18pt; font-weight: bold; margin-top: 24pt; page-break-before: always; } h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; } p { margin-bottom: 12pt; line-height: 1.5; } ul, ol { margin-bottom: 12pt; } </style></head><body>';
+                for (const title of appState.toc) {
+                    const content = appState.content[title];
+                    htmlContent += `<h1>${title}</h1><div>${marked.parse(content)}</div>`;
+                }
+                htmlContent += '</body></html>';
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                saveAs(blob, 'document.html');
+                alert('Dokumen diekspor sebagai HTML. Buka file di browser, lalu simpan sebagai .docx di Microsoft Word (File > Save As > Word Document).');
+            }
             document.getElementById('setting-api-key-choice').addEventListener('change', (e) => { appSettings.apiKeyChoice = e.target.value; document.getElementById('setting-custom-api-key').classList.toggle('hidden', e.target.value !== 'custom'); saveSettings(); });
             document.getElementById('setting-custom-api-key').addEventListener('input', (e) => { appSettings.customApiKey = e.target.value; saveSettings(); });
             document.getElementById('setting-language').addEventListener('change', (e) => { appSettings.language = e.target.value; applyLanguage(e.target.value); saveSettings(); updateWorkflowUI(); });
             document.getElementById('setting-theme').addEventListener('change', (e) => { appSettings.theme = e.target.value; applyTheme(e.target.value); saveSettings(); });
             document.getElementById('setting-toc-dots').addEventListener('change', (e) => { appSettings.tocDots = e.target.checked; saveSettings(); });
+
+            // --- CUSTOM PARAPHRASE MODAL ---
+            document.getElementById('custom-modal-container').innerHTML = `
+                <div id="custom-paraphrase-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg w-full max-w-lg p-6 border border-slate-200 dark:border-slate-700">
+                        <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6">Pengaturan Parafrase Kustom</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="custom-paraphrase-prompt" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">Instruksi Kustom:</label>
+                                <textarea id="custom-paraphrase-prompt" rows="4" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200" placeholder="Masukkan instruksi khusus untuk parafrase..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end gap-3">
+                            <button id="custom-modal-cancel" class="px-4 py-2 bg-slate-200 dark:bg-slate-600 rounded-md hover:bg-slate-300 dark:hover:bg-slate-500 text-sm font-semibold">Batal</button>
+                            <button id="custom-modal-apply" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 text-sm font-semibold">Terapkan</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('custom-paraphrase-prompt').value = appSettings.customParaphrasePrompt;
+            document.getElementById('custom-modal-cancel').addEventListener('click', () => {
+                document.getElementById('custom-paraphrase-modal').classList.add('hidden');
+            });
+            document.getElementById('custom-modal-apply').addEventListener('click', () => {
+                const customPrompt = document.getElementById('custom-paraphrase-prompt').value;
+                appSettings.customParaphrasePrompt = customPrompt;
+                saveSettings();
+                document.getElementById('custom-paraphrase-modal').classList.add('hidden');
+                // Set mode to custom
+                document.querySelectorAll('.paraphrase-mode-btn').forEach(btn => btn.dataset.active = 'false');
+                document.getElementById('btn_custom').dataset.active = 'true';
+                document.getElementById('custom-indicator').classList.remove('hidden');
+            });
+
+            // --- PARAPHRASE PANEL EVENT LISTENERS ---
+            document.addEventListener('selectionchange', () => {
+                const selection = window.getSelection();
+                const selectedText = selection.toString().trim();
+                if (selectedText) {
+                    document.getElementById('selected-text-preview').textContent = selectedText;
+                    document.getElementById('paraphrase-panel').classList.remove('hidden');
+                } else {
+                    document.getElementById('paraphrase-panel').classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (e.target.id === 'close-paraphrase-panel') {
+                    document.getElementById('paraphrase-panel').classList.add('hidden');
+                } else if (e.target.classList.contains('paraphrase-mode-btn')) {
+                    document.querySelectorAll('.paraphrase-mode-btn').forEach(btn => btn.dataset.active = 'false');
+                    e.target.dataset.active = 'true';
+                } else if (e.target.id === 'btn_paraphrase') {
+                    const selectedText = document.getElementById('selected-text-preview').textContent;
+                    if (!selectedText) {
+                        alert('Tidak ada teks yang dipilih.');
+                        return;
+                    }
+                    const activeMode = document.querySelector('.paraphrase-mode-btn[data-active="true"]');
+                    let mode = 'ai0';
+                    if (activeMode) mode = activeMode.dataset.mode;
+                    else if (document.getElementById('btn_custom').dataset.active === 'true') mode = 'custom';
+                    ui.loaderText.textContent = 'Memparafrase...';
+                    ui.loader.classList.remove('hidden');
+                    let prompt;
+                    if (mode === 'custom') {
+                        prompt = `${appSettings.customParaphrasePrompt}: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    } else {
+                        prompt = `Parafrase teks berikut dengan mode ${mode}: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    }
+                    callGeminiAPI(prompt).then(newText => {
+                        ui.loader.classList.add('hidden');
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            const newNode = document.createTextNode(newText);
+                            range.deleteContents();
+                            range.insertNode(newNode);
+                            document.getElementById('paraphrase-panel').classList.add('hidden');
+                        }
+                    }).catch(err => {
+                        ui.loader.classList.add('hidden');
+                        alert('Error paraphrasing: ' + err.message);
+                    });
+                } else if (e.target.id === 'btn_regenerate_paraphrase') {
+                    const selectedText = document.getElementById('selected-text-preview').textContent;
+                    if (!selectedText) {
+                        alert('Tidak ada teks yang dipilih.');
+                        return;
+                    }
+                    const activeMode = document.querySelector('.paraphrase-mode-btn[data-active="true"]');
+                    let mode = 'ai0';
+                    if (activeMode) mode = activeMode.dataset.mode;
+                    else if (document.getElementById('btn_custom').dataset.active === 'true') mode = 'custom';
+                    ui.loaderText.textContent = 'Membuat ulang parafrase...';
+                    ui.loader.classList.remove('hidden');
+                    let prompt;
+                    if (mode === 'custom') {
+                        prompt = `Buat ulang: ${appSettings.customParaphrasePrompt}: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    } else {
+                        prompt = `Buat ulang parafrase untuk teks berikut dengan mode ${mode}: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    }
+                    callGeminiAPI(prompt).then(newText => {
+                        ui.loader.classList.add('hidden');
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            const newNode = document.createTextNode(newText);
+                            range.deleteContents();
+                            range.insertNode(newNode);
+                            document.getElementById('paraphrase-panel').classList.add('hidden');
+                        }
+                    }).catch(err => {
+                        ui.loader.classList.add('hidden');
+                        alert('Error regenerating paraphrase: ' + err.message);
+                    });
+                } else if (e.target.id === 'btn_custom') {
+                    document.getElementById('custom-paraphrase-modal').classList.remove('hidden');
+                } else if (e.target.id === 'btn_expand') {
+                    const selectedText = document.getElementById('selected-text-preview').textContent;
+                    if (!selectedText) {
+                        alert('Tidak ada teks yang dipilih.');
+                        return;
+                    }
+                    const activeMode = document.querySelector('.paraphrase-mode-btn[data-active="true"]');
+                    let mode = 'ai0';
+                    if (activeMode) mode = activeMode.dataset.mode;
+                    else if (document.getElementById('btn_custom').dataset.active === 'true') mode = 'custom';
+                    ui.loaderText.textContent = 'Memperbanyak kata...';
+                    ui.loader.classList.remove('hidden');
+                    let prompt;
+                    if (mode === 'custom') {
+                        prompt = `${appSettings.customParaphrasePrompt}: ${selectedText}. Perbanyak kata, buat lebih panjang dan detail. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    } else {
+                        prompt = `Perbanyak kata dalam teks berikut dengan mode ${mode}, buat lebih panjang dan detail: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
+                    }
+                    callGeminiAPI(prompt).then(newText => {
+                        ui.loader.classList.add('hidden');
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            const range = selection.getRangeAt(0);
+                            const newNode = document.createTextNode(newText);
+                            range.deleteContents();
+                            range.insertNode(newNode);
+                            document.getElementById('paraphrase-panel').classList.add('hidden');
+                        }
+                    }).catch(err => {
+                        ui.loader.classList.add('hidden');
+                        alert('Error expanding text: ' + err.message);
+                    });
+                }
+            });
 
             // --- INITIAL SETUP ---
             loadSettings();
