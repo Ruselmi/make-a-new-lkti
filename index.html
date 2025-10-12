@@ -50,6 +50,192 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Mobile improvements for better visibility and attractiveness */
+        @media (max-width: 768px) {
+            #paraphrase-panel {
+                padding: 1rem;
+            }
+            #paraphrase-panel .flex.items-center.gap-2.mt-3 {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            #paraphrase-panel button {
+                min-height: 44px;
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+            #paraphrase-panel .paraphrase-mode-btn {
+                padding: 0.75rem 1rem;
+            }
+            #paraphrase-panel .text-sm {
+                font-size: 1rem;
+            }
+            #paraphrase-panel .text-xs {
+                font-size: 0.875rem;
+            }
+            #paraphrase-panel .w-4.h-4 {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+            #paraphrase-panel .w-5.h-5 {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            #paraphrase-panel .border-l {
+                border-left: none;
+                border-top: 1px solid;
+                height: 1px;
+                width: 100%;
+                margin: 0.5rem 0;
+            }
+            #paraphrase-panel .flex.items-center.gap-2.mt-3 > div:first-child {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            #paraphrase-panel .flex.items-center.gap-2.mt-3 > div:last-child {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            /* General mobile improvements */
+            .text-lg { font-size: 1.125rem; }
+            .text-xl { font-size: 1.25rem; }
+            .p-4 { padding: 1rem; }
+            .p-6 { padding: 1.5rem; }
+            .p-8 { padding: 2rem; }
+            .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+            .px-4 { padding-left: 1rem; padding-right: 1rem; }
+            .gap-2 { gap: 0.5rem; }
+            .gap-3 { gap: 0.75rem; }
+            .h-4 { height: 1rem; }
+            .w-4 { width: 1rem; }
+            .h-5 { height: 1.25rem; }
+            .w-5 { width: 1.25rem; }
+            .min-h-11 { min-height: 44px; }
+        }
+
+        /* Theme definitions */
+        [data-theme="day"] {
+            --bg-primary: #ffffff;
+            --text-primary: #1f2937;
+            --bg-secondary: #f9fafb;
+            --bg-tertiary: #f3f4f6;
+            --accent: #14b8a6;
+            --border: #d1d5db;
+        }
+        [data-theme="day"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        [data-theme="day"] .bg-slate-50 {
+            background-color: var(--bg-secondary);
+        }
+        [data-theme="day"] .bg-slate-100 {
+            background-color: var(--bg-tertiary);
+        }
+        [data-theme="day"] .text-slate-700 {
+            color: var(--text-primary);
+        }
+        [data-theme="day"] .border-slate-200 {
+            border-color: var(--border);
+        }
+        [data-theme="day"] .bg-teal-500 {
+            background-color: var(--accent);
+        }
+
+        [data-theme="night"] {
+            --bg-primary: #0f172a;
+            --text-primary: #e2e8f0;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --accent: #06b6d4;
+            --border: #475569;
+        }
+        [data-theme="night"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        [data-theme="night"] .bg-slate-50 {
+            background-color: var(--bg-secondary);
+        }
+        [data-theme="night"] .bg-slate-100 {
+            background-color: var(--bg-tertiary);
+        }
+        [data-theme="night"] .text-slate-700 {
+            color: var(--text-primary);
+        }
+        [data-theme="night"] .border-slate-200 {
+            border-color: var(--border);
+        }
+        [data-theme="night"] .bg-teal-500 {
+            background-color: var(--accent);
+        }
+
+        [data-theme="planet"] {
+            --bg-primary: #000011;
+            --text-primary: #e0e7ff;
+            --bg-secondary: #1e1b4b;
+            --bg-tertiary: #312e81;
+            --accent: #3b82f6;
+            --border: #6366f1;
+            background-image: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%), radial-gradient(circle at 40% 80%, rgba(120, 255, 198, 0.3), transparent 50%);
+            background-attachment: fixed;
+        }
+        [data-theme="planet"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        [data-theme="planet"] .bg-slate-50 {
+            background-color: var(--bg-secondary);
+        }
+        [data-theme="planet"] .bg-slate-100 {
+            background-color: var(--bg-tertiary);
+        }
+        [data-theme="planet"] .text-slate-700 {
+            color: var(--text-primary);
+        }
+        [data-theme="planet"] .border-slate-200 {
+            border-color: var(--border);
+        }
+        [data-theme="planet"] .bg-teal-500 {
+            background-color: var(--accent);
+        }
+
+        [data-theme="ai"] {
+            --bg-primary: #0a0a0a;
+            --text-primary: #00ff88;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --accent: #00d4aa;
+            --border: #00ff88;
+            box-shadow: inset 0 0 50px rgba(0, 255, 136, 0.1);
+        }
+        [data-theme="ai"] body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        [data-theme="ai"] .bg-slate-50 {
+            background-color: var(--bg-secondary);
+        }
+        [data-theme="ai"] .bg-slate-100 {
+            background-color: var(--bg-tertiary);
+        }
+        [data-theme="ai"] .text-slate-700 {
+            color: var(--text-primary);
+        }
+        [data-theme="ai"] .border-slate-200 {
+            border-color: var(--border);
+        }
+        [data-theme="ai"] .bg-teal-500 {
+            background-color: var(--accent);
+        }
+        [data-theme="ai"] button:hover {
+            box-shadow: 0 0 10px var(--accent);
+        }
     </style>
 </head>
 <body class="bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 transition-colors duration-300">
@@ -281,10 +467,12 @@
                         </div>
                         <div>
                            <label for="setting-theme" class="block text-xs text-slate-500" data-translate-key="settingsTheme">Tema</label>
-                           <select id="setting-theme" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
-                                <option value="dark" data-translate-key="themeDark">Gelap</option>
-                                <option value="light" data-translate-key="themeLight">Terang</option>
-                           </select>
+                       <select id="setting-theme" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                            <option value="day">Day</option>
+                            <option value="night">Night</option>
+                            <option value="planet">Planet</option>
+                            <option value="ai">AI</option>
+                       </select>
                         </div>
                     </div>
                 </fieldset>
@@ -367,7 +555,7 @@
                     apiKeyChoice: savedSettings.apiKeyChoice || 'default1',
                     customApiKey: savedSettings.customApiKey || '',
                     language: savedSettings.language || 'id',
-                    theme: savedSettings.theme || 'dark',
+                    theme: savedSettings.theme || 'day',
                     tocDots: savedSettings.tocDots === true,
                     customParaphrasePrompt: savedSettings.customParaphrasePrompt || '',
                 };
@@ -397,7 +585,8 @@
                 });
             };
             const applyTheme = (theme) => {
-                if (theme === 'dark') document.documentElement.classList.add('dark');
+                document.documentElement.setAttribute('data-theme', theme);
+                if (theme === 'night') document.documentElement.classList.add('dark');
                 else document.documentElement.classList.remove('dark');
             };
             const getActiveApiKey = () => {
