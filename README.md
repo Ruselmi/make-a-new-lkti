@@ -1,2 +1,1 @@
-# make-a-new-lkti
-lkti 
+https://ruselmi.github.io/make-a-new-lkti/
