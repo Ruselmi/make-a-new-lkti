@@ -1,1 +1,1 @@
-https://ruselmi.github.io/make-a-new-lkti/
+https://ruselmi.github.io/buat_makah_mu/
