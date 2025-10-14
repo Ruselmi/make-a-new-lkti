@@ -78,7 +78,7 @@
             <header class="flex items-center justify-between">
                 <div class="flex items-center space-x-3"><i data-lucide="brain-circuit" class="w-8 h-8 text-primary"></i><div><h1 class="text-xl font-bold text-text-primary">AutoBab Universal Pro</h1><p class="text-sm text-text-secondary">AI Document Editor</p></div></div>
                 <div class="flex items-center space-x-2">
-                    <a href="chatbot.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
+                    <a href="./assistant/chat.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
                         <i data-lucide="bot" class="w-5 h-5 text-text-secondary"></i>
                     </a>
                     <button id="settings-btn" class="p-2 rounded-full hover:bg-border-color/50 transition-colors"><i data-lucide="settings-2" class="w-5 h-5 text-text-secondary"></i></button>
@@ -317,27 +317,14 @@
                                     <button data-command="italic" title="Italic" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="italic" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="underline" title="Underline" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="underline" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="strikethrough" title="Strikethrough" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="strikethrough" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                     <button data-command="superscript" title="Superscript" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="superscript" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                     <button data-command="subscript" title="Subscript" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="subscript" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <div class="h-5 w-px bg-border-color/50 mx-1"></div>
                                     <button data-command="formatBlock" data-value="H1" title="Heading 1" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="heading-1" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="formatBlock" data-value="H2" title="Heading 2" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="heading-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="formatBlock" data-value="H3" title="Heading 3" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="heading-3" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                     <div class="h-5 w-px bg-border-color/50 mx-1"></div>
-                                    <button data-command="justifyLeft" title="Align Left" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="align-left" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <button data-command="justifyCenter" title="Align Center" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="align-center" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <button data-command="justifyRight" title="Align Right" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="align-right" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <button data-command="justifyFull" title="Align Justify" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="align-justify" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <div class="h-5 w-px bg-border-color/50 mx-1"></div>
                                     <button data-command="insertUnorderedList" title="Bullet List" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="list" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="insertOrderedList" title="Numbered List" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="list-ordered" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <button data-command="formatBlock" data-value="blockquote" title="Blockquote" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="quote" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <div class="h-5 w-px bg-border-color/50 mx-1"></div>
-                                    <button id="insert-link-btn" title="Insert Link" class="p-2 rounded-md hover:bg-background"><i data-lucide="link" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button id="insert-image-btn" title="Sisipkan Gambar" class="p-2 rounded-md hover:bg-background"><i data-lucide="image-plus" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <button data-command="insertHorizontalRule" title="Horizontal Rule" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="minus" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
-                                    <div class="h-5 w-px bg-border-color/50 mx-1"></div>
-                                    <button data-command="removeFormat" title="Clear Formatting" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="remove-formatting" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                 </div>
                                 <div id="full-text-editor" contenteditable="true" class="w-full flex-grow resize-none rounded-md bg-input-bg p-4 prose max-w-none">${marked.parse(processData[0].content)}</div>
                             </div>
@@ -660,7 +647,15 @@
             }
         });
         
-        outputContent.addEventListener('input', (e) => { if (e.target.classList.contains('title-input')) { const section = processData.find(p => p.id === e.target.dataset.id); if(section) section.title = e.target.value; } });
+        outputContent.addEventListener('input', (e) => { 
+            if (e.target.classList.contains('title-input')) { 
+                const section = processData.find(p => p.id === e.target.dataset.id); 
+                if(section) section.title = e.target.value; 
+            }
+            if (e.target.id === 'font-size-select') {
+                document.execCommand('fontSize', false, e.target.value);
+            }
+        });
         
         finalActions.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
