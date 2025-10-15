@@ -54,11 +54,13 @@
         #full-text-editor.prose a { @apply text-primary; }
         #full-text-editor:focus { @apply outline-none ring-2 ring-primary; }
         #full-text-editor img { @apply max-w-full h-auto rounded-md my-4; }
+        .editor-toolbar { position: sticky; top: 1rem; z-index: 10; }
         
         /* Styling untuk Book View */
         .book-view #full-text-editor-container { @apply p-8; }
+        .book-view #editor-toolbar { @apply hidden; }
         .book-view #full-text-editor { 
-            @apply w-full max-w-[210mm] min-h-[297mm] mx-auto p-12 bg-white text-black shadow-2xl font-serif;
+            @apply w-full max-w-[210mm] min-h-[297mm] mx-auto p-12 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
         }
         .book-view #full-text-editor.prose h1, .book-view #full-text-editor.prose h2, .book-view #full-text-editor.prose h3,
         .book-view #full-text-editor.prose p, .book-view #full-text-editor.prose li, .book-view #full-text-editor.prose strong {
@@ -189,6 +191,13 @@
         <button data-action="perpanjang" title="Perpanjang" class="toolbar-btn p-2 rounded-md hover:bg-background"><i data-lucide="arrow-right-left" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
         <button data-action="rangkum" title="Rangkum" class="toolbar-btn p-2 rounded-md hover:bg-background"><i data-lucide="unfold-horizontal" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
         <button data-action="terjemahkan" title="Terjemahkan (Inggris)" class="toolbar-btn p-2 rounded-md hover:bg-background"><i data-lucide="languages" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
+        <select data-action="tone" title="Ubah Gaya Tulisan" class="toolbar-select text-sm p-1.5 rounded-md hover:bg-background bg-surface text-text-secondary">
+            <option value="">Ubah Gaya</option>
+            <option value="formal">Formal</option>
+            <option value="santai">Santai</option>
+            <option value="profesional">Profesional</option>
+            <option value="persuasif">Persuasif</option>
+        </select>
     </div>
 
     <!-- MODAL PENGATURAN -->
@@ -201,7 +210,18 @@
     <div id="image-gen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300"><div id="image-gen-overlay" class="absolute inset-0 bg-black/60"></div><div class="relative w-full max-w-lg p-6 m-4 rounded-xl shadow-xl bg-surface animate-scale-in ring-1 ring-border-color/20"><div class="flex items-center justify-between pb-4 border-b border-border-color"><h3 class="text-lg font-semibold text-text-primary flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5"></i>Buat Gambar dengan AI</h3><button id="close-image-gen-modal-btn" class="p-1 rounded-full hover:bg-border-color/50"><i data-lucide="x" class="w-5 h-5 text-text-secondary"></i></button></div><div class="py-6 space-y-4"><textarea id="image-gen-prompt" class="w-full p-2 text-sm rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none" rows="3" placeholder="Deskripsikan gambar yang ingin Anda buat, contoh: 'diagram alur proses penelitian kuantitatif dengan gaya minimalis'"></textarea><div id="image-gen-result-container" class="w-full h-64 bg-background rounded-md flex items-center justify-center border border-border-color/50"><p class="text-text-secondary text-sm">Hasil gambar akan muncul di sini</p></div></div><div class="flex justify-end pt-4 border-t border-border-color gap-2"><button id="generate-image-btn" class="btn px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover transition-colors rounded-lg flex items-center gap-2"><i data-lucide="play" class="w-4 h-4"></i>Generate</button><button id="insert-generated-image-btn" class="btn px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors rounded-lg flex items-center gap-2" disabled><i data-lucide="plus" class="w-4 h-4"></i>Tambahkan ke Galeri</button></div></div></div>
     
     <!-- MODAL INSERT IMAGE -->
-    <div id="insert-image-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300"><div id="insert-image-overlay" class="absolute inset-0 bg-black/60"></div><div class="relative w-full max-w-2xl p-6 m-4 rounded-xl shadow-xl bg-surface animate-scale-in ring-1 ring-border-color/20"><div class="flex items-center justify-between pb-4 border-b border-border-color"><h3 class="text-lg font-semibold text-text-primary flex items-center gap-2"><i data-lucide="image-plus" class="w-5 h-5"></i>Sisipkan Gambar</h3><button id="close-insert-image-modal-btn" class="p-1 rounded-full hover:bg-border-color/50"><i data-lucide="x" class="w-5 h-5 text-text-secondary"></i></button></div><div id="image-gallery" class="py-6 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto"></div></div></div>
+    <div id="insert-image-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300"><div id="insert-image-overlay" class="absolute inset-0 bg-black/60"></div><div class="relative w-full max-w-3xl p-6 m-4 rounded-xl shadow-xl bg-surface animate-scale-in ring-1 ring-border-color/20">
+        <div class="flex items-center justify-between pb-4 border-b border-border-color"><h3 class="text-lg font-semibold text-text-primary flex items-center gap-2"><i data-lucide="image-plus" class="w-5 h-5"></i>Sisipkan Gambar</h3><button id="close-insert-image-modal-btn" class="p-1 rounded-full hover:bg-border-color/50"><i data-lucide="x" class="w-5 h-5 text-text-secondary"></i></button></div>
+        <div class="flex flex-col sm:flex-row gap-4 py-4">
+            <button id="gallery-source-local" class="btn flex-1 bg-primary/10 text-primary font-semibold rounded-md">Galeri Perangkat & AI</button>
+            <button id="gallery-source-online" class="btn flex-1 bg-background hover:bg-border-color/20 rounded-md">Cari Online</button>
+        </div>
+        <div id="image-gallery-local" class="py-6 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 max-h-[50vh] overflow-y-auto"></div>
+        <div id="image-gallery-online" class="hidden py-6 space-y-4">
+            <form id="online-image-search-form" class="flex gap-2"><input id="online-image-search-input" type="search" class="w-full p-2 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary" placeholder="Cari gambar di internet..."><button type="submit" class="btn px-4 bg-primary text-white rounded-md"><i data-lucide="search" class="w-4 h-4"></i></button></form>
+            <div id="online-image-results" class="grid grid-cols-3 sm:grid-cols-4 gap-4 max-h-[40vh] overflow-y-auto"></div>
+        </div>
+    </div>
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -219,7 +239,7 @@
         let userApiKey = "";
         let currentStage = 'initial';
         let activeSelectionRange = null; 
-        let storedImages = []; // Store image file data {type: 'upload'/'generated', src: 'base64_string'}
+        let storedImages = []; 
 
         async function callTextAPI(prompt, images = []) {
             const apiKeyToUse = userApiKey || "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
@@ -275,8 +295,11 @@
                         const infoIcon = !section.isCoreContent ? `<i data-lucide="info" class="w-3 h-3 text-text-secondary ml-1" title="Konten ini dibuat AI berdasarkan bab inti yang sudah ada."></i>` : '';
                         const customizeForm = section.isCoreContent ? `
                             <div id="customize-form-${section.id}" class="hidden space-y-3 mt-2 p-3 bg-background rounded-md border border-border-color/50">
-                                <div><label class="text-xs font-medium text-text-secondary">Target Jumlah Kata (opsional)</label><input type="number" data-id="${section.id}" class="custom-words-input w-full p-1.5 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none" placeholder="Contoh: 1500"></div>
-                                <div><label class="text-xs font-medium text-text-secondary">Fokus Utama & Instruksi Khusus (opsional)</label><textarea data-id="${section.id}" class="custom-focus-input w-full p-1.5 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none" rows="3" placeholder="Contoh: Fokus 80% pada latar belakang masalah, jelaskan urgensinya..."></textarea></div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="text-xs font-medium text-text-secondary">Bagi Bab menjadi</label><input type="number" data-id="${section.id}" class="custom-parts-input w-full p-1.5 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none" value="1" min="1" max="10"></div>
+                                    <div><label class="text-xs font-medium text-text-secondary">Target Jumlah Kata</label><input type="number" data-id="${section.id}" class="custom-words-input w-full p-1.5 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none" placeholder="1500"></div>
+                                </div>
+                                <div><label class="text-xs font-medium text-text-secondary">Fokus Utama & Instruksi Khusus</label><textarea data-id="${section.id}" class="custom-focus-input w-full p-1.5 text-sm rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none" rows="3" placeholder="Contoh: Fokus 80% pada latar belakang masalah, jelaskan urgensinya..."></textarea></div>
                             </div>` : '';
                         sectionEl.innerHTML = `
                             <div class="flex justify-between items-start gap-2">
@@ -298,20 +321,20 @@
                     outputContent.appendChild(container);
                     break;
                 case 'fulltext_generated':
-                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-2">
-                            <div id="full-text-editor-container" class="lg:col-span-2 h-full flex flex-col space-y-2">
+                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 p-2">
+                            <div id="full-text-editor-container" class="h-full flex flex-col space-y-2">
                                 <div class="editor-toolbar flex items-center space-x-1 p-1 bg-surface rounded-md border border-border-color/50 flex-wrap">
                                     <button data-command="undo" title="Undo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="undo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="redo" title="Redo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="redo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <div class="h-5 w-px bg-border-color/50 mx-1"></div>
-                                    <select id="font-size-select" title="Ukuran Font" class="format-select text-sm p-1.5 rounded-md hover:bg-background">
-                                        <option value="1">Sangat Kecil</option>
-                                        <option value="2">Kecil</option>
-                                        <option value="3" selected>Normal</option>
-                                        <option value="4">Sedang</option>
-                                        <option value="5">Besar</option>
-                                        <option value="6">Sangat Besar</option>
+                                    <select data-command="fontName" title="Jenis Font" class="format-select text-sm p-1.5 rounded-md hover:bg-background">
+                                        <option value="Inter">Default</option><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times New Roman">Times</option><option value="Verdana">Verdana</option>
                                     </select>
+                                    <select data-command="fontSize" title="Ukuran Font" class="format-select text-sm p-1.5 rounded-md hover:bg-background">
+                                        <option value="1">8pt</option><option value="2">10pt</option><option value="3" selected>12pt</option><option value="4">14pt</option><option value="5">18pt</option><option value="6">24pt</option>
+                                    </select>
+                                    <input type="color" data-command="foreColor" title="Warna Teks" class="format-btn p-0 h-full">
+                                    <input type="color" data-command="hiliteColor" title="Warna Sorotan" class="format-btn p-0 h-full">
                                     <div class="h-5 w-px bg-border-color/50 mx-1"></div>
                                     <button data-command="bold" title="Bold" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="bold" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="italic" title="Italic" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="italic" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
@@ -327,11 +350,6 @@
                                     <button id="insert-image-btn" title="Sisipkan Gambar" class="p-2 rounded-md hover:bg-background"><i data-lucide="image-plus" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                 </div>
                                 <div id="full-text-editor" contenteditable="true" class="w-full flex-grow resize-none rounded-md bg-input-bg p-4 prose max-w-none">${marked.parse(processData[0].content)}</div>
-                            </div>
-                            <div id="ai-assistant-panel" class="h-full flex flex-col space-y-3 p-3 rounded-md bg-surface border border-border-color/50">
-                                <h3 class="text-sm font-semibold flex items-center gap-2 text-text-primary"><i data-lucide="bot" class="w-5 h-5 text-primary"></i>AI Assistant Dokumen</h3>
-                                <div id="assistant-messages" class="flex-grow space-y-2 overflow-y-auto text-sm p-1"><div class="p-2 bg-background rounded-lg">Halo! Tanyakan apa saja tentang dokumen ini. Contoh: "Buatkan kesimpulan dari teks ini."</div></div>
-                                <form id="assistant-form" class="flex gap-2"><input id="assistant-input" type="text" placeholder="Tanya AI..." class="w-full text-sm p-2 rounded-md bg-input-bg border border-border-color focus:ring-1 focus:ring-primary focus:outline-none"><button type="submit" class="btn p-2 rounded-md bg-primary text-white"><i data-lucide="send" class="w-4 h-4"></i></button></form>
                             </div>
                         </div>`;
                     finalActions.classList.remove('hidden');
@@ -455,13 +473,28 @@
                 document.getElementById('full-text-editor')?.focus();
                 return;
             }
-
             if (button.id === 'insert-link-btn') {
                 const url = prompt("Masukkan URL:", "https://");
                 if (url) document.execCommand('createLink', false, url);
                 return;
             }
-
+            if (button.id === 'insert-table-btn') {
+                const rows = prompt("Jumlah baris:", "3");
+                const cols = prompt("Jumlah kolom:", "3");
+                if (rows && cols) {
+                    let table = '<table style="width:100%; border-collapse: collapse;" border="1"><tbody>';
+                    for(let i = 0; i < parseInt(rows); i++) {
+                        table += '<tr>';
+                        for(let j = 0; j < parseInt(cols); j++) {
+                            table += '<td style="border: 1px solid #ccc; padding: 8px;">&nbsp;</td>';
+                        }
+                        table += '</tr>';
+                    }
+                    table += '</tbody></table><p></p>';
+                    document.execCommand('insertHTML', false, table);
+                }
+                return;
+            }
             if (button.id === 'insert-image-btn') {
                 const modal = document.getElementById('insert-image-modal');
                 const gallery = document.getElementById('image-gallery');
@@ -485,33 +518,65 @@
                 modal.classList.remove('hidden');
                 return;
             }
-
+            if (button.id === 'text-to-speech-btn') {
+                const editor = document.getElementById('full-text-editor');
+                const text = window.getSelection().toString() || editor.innerText;
+                if(text && 'speechSynthesis' in window) {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                    speechSynthesis.speak(utterance);
+                }
+                return;
+            }
+            if (button.id === 'speech-to-text-btn') {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if(SpeechRecognition) {
+                    const recognition = new SpeechRecognition();
+                    recognition.lang = 'id-ID';
+                    recognition.interimResults = false;
+                    recognition.maxAlternatives = 1;
+                    button.classList.add('bg-red-500', 'text-white');
+                    recognition.start();
+                    recognition.onresult = (event) => {
+                        const speechResult = event.results[0][0].transcript;
+                        document.execCommand('insertText', false, speechResult);
+                    };
+                    recognition.onspeechend = () => {
+                        recognition.stop();
+                        button.classList.remove('bg-red-500', 'text-white');
+                    };
+                    recognition.onerror = (event) => {
+                        alert('Error saat dikte: ' + event.error);
+                        button.classList.remove('bg-red-500', 'text-white');
+                    };
+                } else {
+                    alert('Browser Anda tidak mendukung fitur dikte suara.');
+                }
+                return;
+            }
             if(button.classList.contains('customize-btn')) {
                 const sectionId = button.dataset.id;
                 const form = document.getElementById(`customize-form-${sectionId}`);
                 form.classList.toggle('hidden');
                 return;
             }
-
             if (button.classList.contains('generate-btn')) {
                 const sectionId = button.dataset.id;
                 const sectionIndex = processData.findIndex(p => p.id === sectionId);
                 const section = processData[sectionIndex];
-
                 const customWordsInput = document.querySelector(`.custom-words-input[data-id="${sectionId}"]`);
                 const customFocusInput = document.querySelector(`.custom-focus-input[data-id="${sectionId}"]`);
-                if(customWordsInput && customFocusInput) {
-                    section.customInstructions = { words: customWordsInput.value, focus: customFocusInput.value };
+                const customPartsInput = document.querySelector(`.custom-parts-input[data-id="${sectionId}"]`);
+                if(customPartsInput && customFocusInput) {
+                    section.customInstructions = { parts: customPartsInput.value || 1, words: customWordsInput.value, focus: customFocusInput.value };
                 }
-
                 button.disabled = true;
                 button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>Loading</span>`;
                 lucide.createIcons();
-
                 const currentTitle = document.querySelector(`.title-input[data-id="${sectionId}"]`).value;
                 const context = getCoreContentContext();
                 let prompt = buildPromptContext(formInputs);
-
                 if (section.isCoreContent) {
                     const previousContext = context; 
                     if(previousContext) prompt += `Konteks dari bab sebelumnya:\n---\n${previousContext}\n---\n\n`;
@@ -521,19 +586,19 @@
                         if(section.customInstructions.words) prompt += `- Target panjang tulisan sekitar ${section.customInstructions.words} kata.\n`;
                         if(section.customInstructions.focus) prompt += `- Fokus utama: ${section.customInstructions.focus}\n`;
                     }
-                    prompt += `Pastikan konten nyambung. Format: Markdown.`;
+                    prompt += `Pastikan kontennya lengkap, mendalam, siap pakai, dan bukan contoh. Format: Markdown.`;
                 } else { 
                     prompt += `Konteks dari seluruh bab inti dokumen adalah sebagai berikut:\n---\n${context}\n---\n\n`;
-                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi (Table of Contents) yang terstruktur dalam format Markdown. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'.`;
-                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas, buatkan contoh Daftar Pustaka yang relevan. Gunakan gaya sitasi ${formInputs.citationStyle}. Buat 3-5 entri fiktif namun realistis.`;
+                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi yang terstruktur. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'. Ini harus berupa hasil jadi, bukan contoh.`;
+                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Pustaka yang relevan. Gunakan gaya sitasi ${formInputs.citationStyle}. Buat 3-5 entri fiktif namun realistis.`;
                     else if (currentTitle.includes("Daftar Tabel") || currentTitle.includes("Daftar Gambar")) prompt += `Berdasarkan konteks di atas, pindai teks dan buatlah ${currentTitle} yang sesuai. Jika tidak ada tabel/gambar eksplisit, buat contoh yang relevan.`;
                     else if (currentTitle.includes("Lampiran")) prompt += `Berdasarkan konteks di atas, buatkan contoh Lampiran yang relevan (misal: kuesioner, transkrip wawancara).`;
                 }
-
                 try {
                     let aiResponse = "";
-                    if (section.isCoreContent && section.customInstructions && section.customInstructions.focus) {
-                        const planPrompt = `Anda perencana. Berdasarkan instruksi: "Tulis bab '${currentTitle}' target ${section.customInstructions.words || 'beberapa ratus'} kata, fokus pada: ${section.customInstructions.focus}", pecah jadi sub-bagian. Balas HANYA JSON array. Contoh: ["Sub 1", "Sub 2"]`;
+                    const partsToGenerate = (section.isCoreContent && section.customInstructions) ? parseInt(section.customInstructions.parts) : 1;
+                    if (partsToGenerate > 1) {
+                        const planPrompt = `Anda adalah perencana. Berdasarkan instruksi: "Tulis bab '${currentTitle}' dengan fokus pada: ${section.customInstructions.focus || 'pembahasan komprehensif'}", pecah penulisan bab ini menjadi ${partsToGenerate} sub-bagian logis. Balas HANYA dengan JSON array. Contoh: ["Sub 1", "Sub 2"]`;
                         const planResponse = await callTextAPI(planPrompt);
                         const subSections = JSON.parse(planResponse.replace(/```json|```/g, ''));
                         let accumulatedContent = "";
@@ -542,15 +607,14 @@
                             button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>${i+1}/${subSections.length}</span>`;
                             lucide.createIcons();
                             let subPrompt = buildPromptContext(formInputs);
-                            subPrompt += `Konteks:\n---\n${context}\n${accumulatedContent}\n---\n\nLanjutkan dengan menulis sub-bagian "${subSectionTitle}" untuk bab "${currentTitle}".`;
+                            subPrompt += `Konteks:\n---\n${context}\n${accumulatedContent}\n---\n\nLanjutkan dengan menulis sub-bagian "${subSectionTitle}" untuk bab "${currentTitle}". Pastikan kontennya lengkap dan siap pakai.`;
                             const subResponse = await callTextAPI(subPrompt, formInputs.uploadedImages);
-                            accumulatedContent += subResponse + "\n\n";
+                            accumulatedContent += `### ${subSectionTitle}\n\n` + subResponse + "\n\n";
                         }
                         aiResponse = accumulatedContent;
                     } else {
                         aiResponse = await callTextAPI(prompt, formInputs.uploadedImages);
                     }
-                    
                     section.content = aiResponse;
                     section.isGenerated = true;
                     if(section.isCoreContent) {
@@ -615,23 +679,34 @@
         });
 
         floatingToolbar.addEventListener('click', async (e) => {
-            const button = e.target.closest('.toolbar-btn');
-            if (!button || !activeSelectionRange) return; 
+            const target = e.target.closest('.toolbar-btn, .toolbar-select');
+            if (!target || !activeSelectionRange) return;
             
-            const action = button.dataset.action;
+            const action = target.dataset.action;
             const selectedText = activeSelectionRange.toString();
             
-            const originalIcon = button.innerHTML;
-            button.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-text-secondary animate-spin"></i>`;
-            lucide.createIcons();
-
             let prompt;
-            switch(action) {
-                case 'parafrase': prompt = `Parafrasekan teks berikut: "${selectedText}"`; break;
-                case 'perpanjang': prompt = `Perpanjang teks berikut: "${selectedText}"`; break;
-                case 'rangkum': prompt = `Rangkum teks berikut: "${selectedText}"`; break;
-                case 'terjemahkan': prompt = `Terjemahkan ke Bahasa Inggris: "${selectedText}"`; break;
+            if (action === 'tone') {
+                const tone = target.value;
+                if(!tone) return;
+                prompt = `Ubah gaya tulisan teks berikut menjadi ${tone}: "${selectedText}"`;
+            } else {
+                 switch(action) {
+                    case 'parafrase': prompt = `Parafrasekan teks berikut: "${selectedText}"`; break;
+                    case 'perpanjang': prompt = `Perpanjang teks berikut: "${selectedText}"`; break;
+                    case 'rangkum': prompt = `Rangkum teks berikut: "${selectedText}"`; break;
+                    case 'terjemahkan': prompt = `Terjemahkan ke Bahasa Inggris: "${selectedText}"`; break;
+                }
             }
+
+            if(!prompt) return;
+
+            const originalValue = (target.tagName === 'SELECT') ? target.value : null;
+            const originalContent = (target.tagName === 'BUTTON') ? target.innerHTML : null;
+            target.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-text-secondary animate-spin"></i>`;
+            if(target.tagName === 'SELECT') target.disabled = true;
+            lucide.createIcons();
+            
             try {
                 const aiResponse = await callTextAPI(prompt);
                 const selection = window.getSelection();
@@ -640,35 +715,33 @@
                 document.execCommand('insertText', false, aiResponse.trim());
             } catch (error) { alert(`Aksi gagal: ${error.message}`); }
             finally { 
-                button.innerHTML = originalIcon; 
+                if(target.tagName === 'BUTTON') target.innerHTML = originalContent;
+                if(target.tagName === 'SELECT') {
+                    target.value = originalValue;
+                    target.disabled = false;
+                }
                 lucide.createIcons(); 
                 floatingToolbar.classList.add('hidden', 'opacity-0');
                 activeSelectionRange = null;
             }
         });
         
-        outputContent.addEventListener('input', (e) => { 
-            if (e.target.classList.contains('title-input')) { 
-                const section = processData.find(p => p.id === e.target.dataset.id); 
-                if(section) section.title = e.target.value; 
-            }
-            if (e.target.id === 'font-size-select') {
-                document.execCommand('fontSize', false, e.target.value);
+        outputContent.addEventListener('input', (e) => { if (e.target.classList.contains('title-input')) { const section = processData.find(p => p.id === e.target.dataset.id); if(section) section.title = e.target.value; } });
+        outputContent.addEventListener('change', (e) => {
+            if (e.target.classList.contains('format-select')) {
+                document.execCommand(e.target.dataset.command, false, e.target.value);
             }
         });
         
         finalActions.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const editor = document.getElementById('full-text-editor');
             if (!editor) return alert('Editor tidak ditemukan.');
-            
             const docTitle = formInputs.docType || 'dokumen-ai';
             const originalIcon = button.innerHTML;
             button.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 text-text-secondary animate-spin"></i>`;
             lucide.createIcons();
-
             try {
                 if (button.id === 'download-docx-btn') {
                     if (typeof htmlDocx === 'undefined' || typeof saveAs === 'undefined') throw new Error('Pustaka ekspor DOCX belum siap.');
@@ -736,7 +809,6 @@
             toggleModal(); 
         });
         document.getElementById('jenis-dokumen').addEventListener('change', (e) => document.getElementById('custom-type-container').classList.toggle('hidden', e.target.value !== 'Custom'));
-
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
             if (!button) return;
@@ -749,7 +821,6 @@
             }
             lucide.createIcons();
         });
-        
         document.getElementById('sertakan-data').addEventListener('change', e => {
             document.getElementById('referensi-data-input').classList.toggle('hidden', !e.target.checked);
         });
@@ -760,11 +831,9 @@
                 document.getElementById('image-preview-container').innerHTML = '';
             }
         });
-
         document.getElementById('image-upload-input').addEventListener('change', e => {
             const files = Array.from(e.target.files).slice(0, 10 - storedImages.length);
             const previewContainer = document.getElementById('image-preview-container');
-            
             files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -778,28 +847,23 @@
                 reader.readAsDataURL(file);
             });
         });
-
         const imageGenModal = document.getElementById('image-gen-modal');
         const openImageGenBtn = document.getElementById('open-image-gen-modal-btn');
         const closeImageGenBtn = document.getElementById('close-image-gen-modal-btn');
         const imageGenOverlay = document.getElementById('image-gen-overlay');
         const generateImageBtn = document.getElementById('generate-image-btn');
         const insertGeneratedImageBtn = document.getElementById('insert-generated-image-btn');
-        
         const toggleImageGenModal = () => imageGenModal.classList.toggle('hidden');
         openImageGenBtn.addEventListener('click', toggleImageGenModal);
         closeImageGenBtn.addEventListener('click', toggleImageGenModal);
         imageGenOverlay.addEventListener('click', toggleImageGenModal);
-
         generateImageBtn.addEventListener('click', async () => {
             const prompt = document.getElementById('image-gen-prompt').value;
             if (!prompt) return alert('Harap masukkan deskripsi gambar.');
-            
             const resultContainer = document.getElementById('image-gen-result-container');
             resultContainer.innerHTML = `<i data-lucide="loader-2" class="w-10 h-10 text-primary animate-spin"></i>`;
             lucide.createIcons();
             insertGeneratedImageBtn.disabled = true;
-            
             try {
                 const imageUrl = await callImageAPI(prompt);
                 resultContainer.innerHTML = `<img src="${imageUrl}" class="max-w-full max-h-full object-contain">`;
@@ -809,15 +873,10 @@
                 resultContainer.innerHTML = `<p class="text-red-500 text-sm">Gagal membuat gambar: ${error.message}</p>`;
             }
         });
-
         insertGeneratedImageBtn.addEventListener('click', () => {
             const imageUrl = insertGeneratedImageBtn.dataset.src;
-            if (!imageUrl || storedImages.length >= 10) {
-                if(storedImages.length >= 10) alert('Maksimal 10 gambar.');
-                return;
-            }
+            if (!imageUrl || storedImages.length >= 10) { if(storedImages.length >= 10) alert('Maksimal 10 gambar.'); return; }
             storedImages.push({ type: 'generated', src: imageUrl });
-            
             const previewContainer = document.getElementById('image-preview-container');
             const imgEl = document.createElement('img');
             imgEl.src = imageUrl;
@@ -825,14 +884,12 @@
             previewContainer.appendChild(imgEl);
             toggleImageGenModal();
         });
-
         const insertImageModal = document.getElementById('insert-image-modal');
         const closeInsertImageModalBtn = document.getElementById('close-insert-image-modal-btn');
         const insertImageOverlay = document.getElementById('insert-image-overlay');
         const toggleInsertImageModal = () => insertImageModal.classList.toggle('hidden');
         closeInsertImageModalBtn.addEventListener('click', toggleInsertImageModal);
         insertImageOverlay.addEventListener('click', toggleInsertImageModal);
-
         renderUI();
     });
     </script>
