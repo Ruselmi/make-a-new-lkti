@@ -57,17 +57,24 @@
         .editor-toolbar { position: sticky; top: 1rem; z-index: 10; }
         
         /* Styling untuk Book View */
-        .book-view #full-text-editor-container { @apply p-8; }
-        .book-view #editor-toolbar { @apply hidden; }
-        .book-view #full-text-editor { 
-            @apply w-full max-w-[210mm] min-h-[297mm] mx-auto p-12 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
+        .book-view-active { @apply bg-gray-300; }
+        [data-theme="night"] .book-view-active, [data-theme="planet"] .book-view-active, [data-theme="ai"] .book-view-active { @apply bg-gray-800; }
+        
+        .book-view-active #editor-toolbar, .book-view-active #ai-assistant-panel { @apply hidden; }
+        .book-view-active #editor-grid { @apply grid-cols-1; }
+        .book-view-active #full-text-editor-container { @apply p-4 sm:p-8; }
+        .book-view-active #full-text-editor { 
+            @apply w-full max-w-[210mm] min-h-[297mm] mx-auto p-12 sm:p-16 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
         }
-        .book-view #full-text-editor.prose h1, .book-view #full-text-editor.prose h2, .book-view #full-text-editor.prose h3,
-        .book-view #full-text-editor.prose p, .book-view #full-text-editor.prose li, .book-view #full-text-editor.prose strong {
-            @apply text-black;
+        .book-view-active #full-text-editor.prose h1 { @apply text-2xl font-bold text-center !text-black; }
+        .book-view-active #full-text-editor.prose h2 { @apply text-xl font-bold !text-black; }
+        .book-view-active #full-text-editor.prose h3 { @apply text-lg font-bold !text-black; }
+        .book-view-active #full-text-editor.prose p, .book-view-active #full-text-editor.prose li, 
+        .book-view-active #full-text-editor.prose strong, .book-view-active #full-text-editor.prose blockquote {
+            @apply !text-black;
         }
-        .book-view #ai-assistant-panel { @apply hidden; }
-        .book-view #editor-grid { @apply grid-cols-1; }
+        .book-view-active #full-text-editor a { @apply text-blue-700 underline; }
+        
         .editor-toolbar select, .editor-toolbar input[type=color] { @apply bg-transparent border-none focus:ring-0 text-text-secondary; }
         .editor-toolbar input[type=color] { @apply w-6 h-6 p-0; }
     </style>
@@ -179,7 +186,7 @@
                     <button id="copy-btn" title="Salin Teks" class="btn p-2 rounded-md bg-background hover:bg-border-color/50 transition-colors"><i data-lucide="copy" class="w-5 h-5 text-text-secondary"></i></button>
                 </div>
             </header>
-            <div id="output-content" class="flex-grow w-full overflow-y-auto rounded-lg bg-background border border-border-color/50 p-1 space-y-4">
+            <div id="output-content" class="flex-grow w-full overflow-y-auto p-1 space-y-4">
                 <!-- UI Dinamis Dirender di Sini -->
             </div>
         </div>
@@ -321,8 +328,8 @@
                     outputContent.appendChild(container);
                     break;
                 case 'fulltext_generated':
-                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 p-2">
-                            <div id="full-text-editor-container" class="h-full flex flex-col space-y-2">
+                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-2">
+                            <div id="full-text-editor-container" class="lg:col-span-3 h-full flex flex-col space-y-2">
                                 <div class="editor-toolbar flex items-center space-x-1 p-1 bg-surface rounded-md border border-border-color/50 flex-wrap">
                                     <button data-command="undo" title="Undo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="undo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="redo" title="Redo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="redo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
@@ -473,11 +480,13 @@
                 document.getElementById('full-text-editor')?.focus();
                 return;
             }
+
             if (button.id === 'insert-link-btn') {
                 const url = prompt("Masukkan URL:", "https://");
                 if (url) document.execCommand('createLink', false, url);
                 return;
             }
+            
             if (button.id === 'insert-table-btn') {
                 const rows = prompt("Jumlah baris:", "3");
                 const cols = prompt("Jumlah kolom:", "3");
@@ -495,29 +504,14 @@
                 }
                 return;
             }
+
             if (button.id === 'insert-image-btn') {
                 const modal = document.getElementById('insert-image-modal');
-                const gallery = document.getElementById('image-gallery');
-                gallery.innerHTML = ''; 
-                if(storedImages.length === 0) {
-                    gallery.innerHTML = `<p class="text-text-secondary col-span-full text-center">Tidak ada gambar. Unggah atau buat gambar dengan AI di panel kiri.</p>`;
-                } else {
-                    storedImages.forEach(img => {
-                        const imgEl = document.createElement('img');
-                        imgEl.src = img.src;
-                        imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
-                        imgEl.onclick = () => {
-                            const editor = document.getElementById('full-text-editor');
-                            editor.focus();
-                            document.execCommand('insertHTML', false, `<img src="${img.src}" alt="Gambar yang disisipkan" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
-                            modal.classList.add('hidden');
-                        };
-                        gallery.appendChild(imgEl);
-                    });
-                }
                 modal.classList.remove('hidden');
+                openInsertImageModal();
                 return;
             }
+
             if (button.id === 'text-to-speech-btn') {
                 const editor = document.getElementById('full-text-editor');
                 const text = window.getSelection().toString() || editor.innerText;
@@ -529,6 +523,7 @@
                 }
                 return;
             }
+
             if (button.id === 'speech-to-text-btn') {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if(SpeechRecognition) {
@@ -555,28 +550,34 @@
                 }
                 return;
             }
+
             if(button.classList.contains('customize-btn')) {
                 const sectionId = button.dataset.id;
                 const form = document.getElementById(`customize-form-${sectionId}`);
                 form.classList.toggle('hidden');
                 return;
             }
+
             if (button.classList.contains('generate-btn')) {
                 const sectionId = button.dataset.id;
                 const sectionIndex = processData.findIndex(p => p.id === sectionId);
                 const section = processData[sectionIndex];
+                
+                const customPartsInput = document.querySelector(`.custom-parts-input[data-id="${sectionId}"]`);
                 const customWordsInput = document.querySelector(`.custom-words-input[data-id="${sectionId}"]`);
                 const customFocusInput = document.querySelector(`.custom-focus-input[data-id="${sectionId}"]`);
-                const customPartsInput = document.querySelector(`.custom-parts-input[data-id="${sectionId}"]`);
                 if(customPartsInput && customFocusInput) {
                     section.customInstructions = { parts: customPartsInput.value || 1, words: customWordsInput.value, focus: customFocusInput.value };
                 }
+
                 button.disabled = true;
                 button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>Loading</span>`;
                 lucide.createIcons();
+
                 const currentTitle = document.querySelector(`.title-input[data-id="${sectionId}"]`).value;
                 const context = getCoreContentContext();
                 let prompt = buildPromptContext(formInputs);
+
                 if (section.isCoreContent) {
                     const previousContext = context; 
                     if(previousContext) prompt += `Konteks dari bab sebelumnya:\n---\n${previousContext}\n---\n\n`;
@@ -589,14 +590,16 @@
                     prompt += `Pastikan kontennya lengkap, mendalam, siap pakai, dan bukan contoh. Format: Markdown.`;
                 } else { 
                     prompt += `Konteks dari seluruh bab inti dokumen adalah sebagai berikut:\n---\n${context}\n---\n\n`;
-                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi yang terstruktur. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'. Ini harus berupa hasil jadi, bukan contoh.`;
-                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Pustaka yang relevan. Gunakan gaya sitasi ${formInputs.citationStyle}. Buat 3-5 entri fiktif namun realistis.`;
+                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi (Table of Contents) yang terstruktur. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'. Ini harus berupa hasil jadi, bukan contoh.`;
+                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas, buatkan contoh Daftar Pustaka yang relevan. Gunakan gaya sitasi ${formInputs.citationStyle}. Buat 3-5 entri fiktif namun realistis.`;
                     else if (currentTitle.includes("Daftar Tabel") || currentTitle.includes("Daftar Gambar")) prompt += `Berdasarkan konteks di atas, pindai teks dan buatlah ${currentTitle} yang sesuai. Jika tidak ada tabel/gambar eksplisit, buat contoh yang relevan.`;
                     else if (currentTitle.includes("Lampiran")) prompt += `Berdasarkan konteks di atas, buatkan contoh Lampiran yang relevan (misal: kuesioner, transkrip wawancara).`;
                 }
+
                 try {
                     let aiResponse = "";
                     const partsToGenerate = (section.isCoreContent && section.customInstructions) ? parseInt(section.customInstructions.parts) : 1;
+                    
                     if (partsToGenerate > 1) {
                         const planPrompt = `Anda adalah perencana. Berdasarkan instruksi: "Tulis bab '${currentTitle}' dengan fokus pada: ${section.customInstructions.focus || 'pembahasan komprehensif'}", pecah penulisan bab ini menjadi ${partsToGenerate} sub-bagian logis. Balas HANYA dengan JSON array. Contoh: ["Sub 1", "Sub 2"]`;
                         const planResponse = await callTextAPI(planPrompt);
@@ -615,6 +618,7 @@
                     } else {
                         aiResponse = await callTextAPI(prompt, formInputs.uploadedImages);
                     }
+                    
                     section.content = aiResponse;
                     section.isGenerated = true;
                     if(section.isCoreContent) {
@@ -680,7 +684,7 @@
 
         floatingToolbar.addEventListener('click', async (e) => {
             const target = e.target.closest('.toolbar-btn, .toolbar-select');
-            if (!target || !activeSelectionRange) return;
+            if (!target || !activeSelectionRange) return; 
             
             const action = target.dataset.action;
             const selectedText = activeSelectionRange.toString();
@@ -700,12 +704,16 @@
             }
 
             if(!prompt) return;
-
+            
             const originalValue = (target.tagName === 'SELECT') ? target.value : null;
             const originalContent = (target.tagName === 'BUTTON') ? target.innerHTML : null;
-            target.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-text-secondary animate-spin"></i>`;
-            if(target.tagName === 'SELECT') target.disabled = true;
-            lucide.createIcons();
+            
+            if (target.tagName === 'BUTTON') {
+                target.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-text-secondary animate-spin"></i>`;
+                lucide.createIcons();
+            } else {
+                target.disabled = true;
+            }
             
             try {
                 const aiResponse = await callTextAPI(prompt);
@@ -736,12 +744,15 @@
         finalActions.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
             if (!button) return;
+
             const editor = document.getElementById('full-text-editor');
             if (!editor) return alert('Editor tidak ditemukan.');
+            
             const docTitle = formInputs.docType || 'dokumen-ai';
             const originalIcon = button.innerHTML;
             button.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 text-text-secondary animate-spin"></i>`;
             lucide.createIcons();
+
             try {
                 if (button.id === 'download-docx-btn') {
                     if (typeof htmlDocx === 'undefined' || typeof saveAs === 'undefined') throw new Error('Pustaka ekspor DOCX belum siap.');
@@ -809,11 +820,20 @@
             toggleModal(); 
         });
         document.getElementById('jenis-dokumen').addEventListener('change', (e) => document.getElementById('custom-type-container').classList.toggle('hidden', e.target.value !== 'Custom'));
+
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
             if (!button) return;
-            const editorGrid = document.getElementById('editor-grid');
-            const isBookView = editorGrid.classList.toggle('book-view');
+
+            const outputPanel = document.getElementById('output-content');
+            outputPanel.classList.toggle('book-view-active');
+            
+            const isBookView = outputPanel.classList.contains('book-view-active');
+            const editor = document.getElementById('full-text-editor');
+            if (editor) {
+                editor.contentEditable = !isBookView;
+            }
+
             if (isBookView) {
                 button.innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-text-secondary"></i><span class="text-text-secondary">Editor View</span>`;
             } else {
@@ -821,6 +841,7 @@
             }
             lucide.createIcons();
         });
+        
         document.getElementById('sertakan-data').addEventListener('change', e => {
             document.getElementById('referensi-data-input').classList.toggle('hidden', !e.target.checked);
         });
@@ -831,9 +852,11 @@
                 document.getElementById('image-preview-container').innerHTML = '';
             }
         });
+
         document.getElementById('image-upload-input').addEventListener('change', e => {
             const files = Array.from(e.target.files).slice(0, 10 - storedImages.length);
             const previewContainer = document.getElementById('image-preview-container');
+            
             files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -847,23 +870,28 @@
                 reader.readAsDataURL(file);
             });
         });
+
         const imageGenModal = document.getElementById('image-gen-modal');
         const openImageGenBtn = document.getElementById('open-image-gen-modal-btn');
         const closeImageGenBtn = document.getElementById('close-image-gen-modal-btn');
         const imageGenOverlay = document.getElementById('image-gen-overlay');
         const generateImageBtn = document.getElementById('generate-image-btn');
         const insertGeneratedImageBtn = document.getElementById('insert-generated-image-btn');
+        
         const toggleImageGenModal = () => imageGenModal.classList.toggle('hidden');
         openImageGenBtn.addEventListener('click', toggleImageGenModal);
         closeImageGenBtn.addEventListener('click', toggleImageGenModal);
         imageGenOverlay.addEventListener('click', toggleImageGenModal);
+
         generateImageBtn.addEventListener('click', async () => {
             const prompt = document.getElementById('image-gen-prompt').value;
             if (!prompt) return alert('Harap masukkan deskripsi gambar.');
+            
             const resultContainer = document.getElementById('image-gen-result-container');
             resultContainer.innerHTML = `<i data-lucide="loader-2" class="w-10 h-10 text-primary animate-spin"></i>`;
             lucide.createIcons();
             insertGeneratedImageBtn.disabled = true;
+            
             try {
                 const imageUrl = await callImageAPI(prompt);
                 resultContainer.innerHTML = `<img src="${imageUrl}" class="max-w-full max-h-full object-contain">`;
@@ -873,6 +901,7 @@
                 resultContainer.innerHTML = `<p class="text-red-500 text-sm">Gagal membuat gambar: ${error.message}</p>`;
             }
         });
+
         insertGeneratedImageBtn.addEventListener('click', () => {
             const imageUrl = insertGeneratedImageBtn.dataset.src;
             if (!imageUrl || storedImages.length >= 10) { if(storedImages.length >= 10) alert('Maksimal 10 gambar.'); return; }
@@ -884,12 +913,85 @@
             previewContainer.appendChild(imgEl);
             toggleImageGenModal();
         });
+        
         const insertImageModal = document.getElementById('insert-image-modal');
         const closeInsertImageModalBtn = document.getElementById('close-insert-image-modal-btn');
         const insertImageOverlay = document.getElementById('insert-image-overlay');
+        const gallerySourceLocal = document.getElementById('gallery-source-local');
+        const gallerySourceOnline = document.getElementById('gallery-source-online');
+        const imageGalleryLocal = document.getElementById('image-gallery-local');
+        const imageGalleryOnline = document.getElementById('image-gallery-online');
+        const onlineImageSearchForm = document.getElementById('online-image-search-form');
+        
+        function openInsertImageModal() {
+            gallerySourceLocal.click(); 
+            imageGalleryLocal.innerHTML = ''; 
+            if(storedImages.length === 0) {
+                imageGalleryLocal.innerHTML = `<p class="text-text-secondary col-span-full text-center">Tidak ada gambar. Unggah atau buat gambar dengan AI di panel kiri.</p>`;
+            } else {
+                storedImages.forEach(img => {
+                    const imgEl = document.createElement('img');
+                    imgEl.src = img.src;
+                    imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
+                    imgEl.onclick = () => {
+                        const editor = document.getElementById('full-text-editor');
+                        editor.focus();
+                        document.execCommand('insertHTML', false, `<img src="${img.src}" alt="Gambar yang disisipkan" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
+                        insertImageModal.classList.add('hidden');
+                    };
+                    imageGalleryLocal.appendChild(imgEl);
+                });
+            }
+            insertImageModal.classList.remove('hidden');
+        }
+        
+        gallerySourceLocal.addEventListener('click', () => {
+            imageGalleryLocal.classList.remove('hidden');
+            imageGalleryOnline.classList.add('hidden');
+            gallerySourceLocal.classList.replace('bg-background', 'bg-primary/10');
+            gallerySourceLocal.classList.add('text-primary', 'font-semibold');
+            gallerySourceOnline.classList.replace('bg-primary/10', 'bg-background');
+            gallerySourceOnline.classList.remove('text-primary', 'font-semibold');
+        });
+        gallerySourceOnline.addEventListener('click', () => {
+            imageGalleryOnline.classList.remove('hidden');
+            imageGalleryLocal.classList.add('hidden');
+            gallerySourceOnline.classList.replace('bg-background', 'bg-primary/10');
+            gallerySourceOnline.classList.add('text-primary', 'font-semibold');
+            gallerySourceLocal.classList.replace('bg-primary/10', 'bg-background');
+            gallerySourceLocal.classList.remove('text-primary', 'font-semibold');
+        });
+
+        onlineImageSearchForm.addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const query = document.getElementById('online-image-search-input').value;
+            if(!query) return;
+            const resultsContainer = document.getElementById('online-image-results');
+            resultsContainer.innerHTML = `<div class="col-span-full flex justify-center p-8"><i data-lucide="loader-2" class="w-8 h-8 text-primary animate-spin"></i></div>`;
+            lucide.createIcons();
+            
+            try {
+                const imageUrl = await callImageAPI(`photo of ${query}`);
+                 resultsContainer.innerHTML = '';
+                 const imgEl = document.createElement('img');
+                 imgEl.src = imageUrl;
+                 imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
+                 imgEl.onclick = () => {
+                    const editor = document.getElementById('full-text-editor');
+                    editor.focus();
+                    document.execCommand('insertHTML', false, `<img src="${imageUrl}" alt="${query}" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
+                    insertImageModal.classList.add('hidden');
+                };
+                resultsContainer.appendChild(imgEl);
+            } catch(error) {
+                 resultsContainer.innerHTML = `<p class="text-red-500 col-span-full text-center">Gagal mencari gambar.</p>`;
+            }
+        });
+        
         const toggleInsertImageModal = () => insertImageModal.classList.toggle('hidden');
         closeInsertImageModalBtn.addEventListener('click', toggleInsertImageModal);
         insertImageOverlay.addEventListener('click', toggleInsertImageModal);
+        
         renderUI();
     });
     </script>
