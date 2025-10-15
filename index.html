@@ -93,7 +93,7 @@
             <header class="flex items-center justify-between">
                 <div class="flex items-center space-x-3"><i data-lucide="brain-circuit" class="w-8 h-8 text-primary"></i><div><h1 class="text-xl font-bold text-text-primary">AutoBab Universal Pro</h1><p class="text-sm text-text-secondary">AI Document Editor</p></div></div>
                 <div class="flex items-center space-x-2">
-                    <a href="chat.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
+                    <a href="./assistant/chat.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
                         <i data-lucide="bot" class="w-5 h-5 text-text-secondary"></i>
                     </a>
                     <button id="settings-btn" class="p-2 rounded-full hover:bg-border-color/50 transition-colors"><i data-lucide="settings-2" class="w-5 h-5 text-text-secondary"></i></button>
@@ -102,26 +102,73 @@
             <hr class="border-border-color/50">
             <form id="generator-form" class="flex-grow space-y-4 overflow-y-auto pr-2">
                 <div><label class="block text-sm font-medium text-text-secondary mb-2">Mode Pembuatan</label><div class="flex space-x-4"><label class="flex items-center space-x-2"><input type="radio" name="mode" value="otomatis" class="form-radio text-primary focus:ring-primary" checked><span class="text-text-primary">Otomatis</span></label><label class="flex items-center space-x-2"><input type="radio" name="mode" value="manual" class="form-radio text-primary focus:ring-primary"><span class="text-text-primary">Manual</span></label></div></div>
-                <div><label for="jenis-dokumen" class="block text-sm font-medium text-text-secondary mb-2">Jenis Dokumen</label><select id="jenis-dokumen" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none"><option>Skripsi</option><option>Makalah</option><option>Jurnal Ilmiah</option><option value="Custom">Custom</option></select></div>
+                <div>
+                    <label for="jenis-dokumen" class="block text-sm font-medium text-text-secondary mb-2">Jenis Dokumen</label>
+                    <select id="jenis-dokumen" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none">
+                        <optgroup label="Akademik & Penelitian">
+                            <option>Skripsi</option>
+                            <option>Tesis</option>
+                            <option>Disertasi</option>
+                            <option>Jurnal Ilmiah</option>
+                            <option>Proposal Penelitian</option>
+                            <option>Laporan Penelitian</option>
+                            <option>Studi Kasus</option>
+                        </optgroup>
+                        <optgroup label="Tugas Sekolah & Pelajar">
+                            <option>Makalah</option>
+                            <option>Esai</option>
+                            <option>Laporan Praktikum</option>
+                            <option>Presentasi</option>
+                            <option>Ringkasan Buku</option>
+                            <option>Resensi Film</option>
+                            <option>Pidato</option>
+                            <option>Biografi</option>
+                            <option>Artikel Populer</option>
+                            <option>Karya Ilmiah Remaja</option>
+                            <option>Rangkuman Materi</option>
+                            <option>Tugas Kelompok</option>
+                            <option>Surat Lamaran Kerja</option>
+                            <option>Curriculum Vitae (CV)</option>
+                        </optgroup>
+                        <optgroup label="Hiburan & Kreatif">
+                            <option>Cerita Pendek</option>
+                            <option>Novel</option>
+                            <option>Puisi</option>
+                            <option>Naskah Film</option>
+                            <option>Skenario Drama</option>
+                            <option>Lirik Lagu</option>
+                        </optgroup>
+                        <optgroup label="Lainnya">
+                            <option value="Custom">Custom</option>
+                        </optgroup>
+                    </select>
+                </div>
                 <div id="custom-type-container" class="hidden"><label for="custom-type-input" class="block text-sm font-medium text-text-secondary mb-2">Nama Dokumen Custom</label><input type="text" id="custom-type-input" placeholder="Contoh: Laporan Proyek" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none"></div>
                 <div><label for="topik-utama" class="block text-sm font-medium text-text-secondary mb-2">Topik Utama</label><textarea id="topik-utama" rows="3" placeholder="Contoh: Analisis sentimen media sosial terhadap kebijakan publik..." class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none resize-none"></textarea></div>
                 <div id="struktur-dokumen-container" class="hidden">
                     <label class="block text-sm font-medium text-text-secondary mb-2">Struktur Dokumen (Hanya untuk Mode Manual)</label>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-background rounded-md border border-border-color/50">
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Daftar Isi" checked><span class="text-sm">Daftar Isi</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Daftar Tabel"><span class="text-sm">Daftar Tabel</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Daftar Gambar"><span class="text-sm">Daftar Gambar</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Bab 1: Pendahuluan" checked><span class="text-sm">Bab 1</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Bab 2: Tinjauan Pustaka" checked><span class="text-sm">Bab 2</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Bab 3: Metodologi" checked><span class="text-sm">Bab 3</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Bab 4: Hasil & Pembahasan" checked><span class="text-sm">Bab 4</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Bab 5: Kesimpulan" checked><span class="text-sm">Bab 5</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Daftar Pustaka" checked><span class="text-sm">Daftar Pustaka</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="structure-checkbox" value="Lampiran"><span class="text-sm">Lampiran</span></label>
+                    <div id="struktur-checkboxes" class="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-background rounded-md border border-border-color/50">
+                        <!-- Checkboxes will be dynamically injected here -->
                     </div>
                 </div>
                 <div><label for="gaya-sitasi" class="block text-sm font-medium text-text-secondary mb-2">Gaya Sitasi</p><select id="gaya-sitasi" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none"><option>APA 7th Edition</option><option>MLA 9th Edition</option><option>IEEE</option></select></div>
                 
+                 <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">Jenis Penelitian</label>
+                    <div id="jenis-penelitian-container" class="grid grid-cols-2 gap-2 p-3 bg-background rounded-md border border-border-color/50">
+                         <label class="flex items-center space-x-2"><input type="checkbox" name="jenis-penelitian" value="Kualitatif" class="form-checkbox rounded text-primary focus:ring-primary"><span class="text-sm">Kualitatif</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" name="jenis-penelitian" value="Kuantitatif" class="form-checkbox rounded text-primary focus:ring-primary"><span class="text-sm">Kuantitatif</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" name="jenis-penelitian" value="Campuran" class="form-checkbox rounded text-primary focus:ring-primary"><span class="text-sm">Campuran</span></label>
+                        <label class="flex items-center space-x-2"><input type="checkbox" name="jenis-penelitian" value="Literatur" class="form-checkbox rounded text-primary focus:ring-primary"><span class="text-sm">Studi Literatur</span></label>
+                    </div>
+                </div>
+                <div id="sub-bab-otomatis-container" class="hidden space-y-2">
+                    <label class="block text-sm font-medium text-text-secondary">Saran Sub-Bab Metodologi:</label>
+                    <div id="sub-bab-tags" class="flex flex-wrap gap-2">
+                        <!-- Tags will be injected here -->
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label for="min-tahun" class="block text-sm font-medium text-text-secondary mb-2">Min Tahun Referensi</label>
@@ -130,17 +177,6 @@
                     <div>
                         <label for="max-tahun" class="block text-sm font-medium text-text-secondary mb-2">Max Tahun Referensi</label>
                         <input type="number" id="max-tahun" placeholder="2025" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-text-secondary mb-2">Sumber Referensi</label>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-background rounded-md border border-border-color/50">
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="sumber-referensi-checkbox" value="Jurnal Ilmiah" checked><span class="text-sm">Jurnal</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="sumber-referensi-checkbox" value="Skripsi/Tesis" checked><span class="text-sm">Skripsi/Tesis</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="sumber-referensi-checkbox" value="Artikel Online"><span class="text-sm">Artikel</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="sumber-referensi-checkbox" value="Makalah Konferensi"><span class="text-sm">Makalah</span></label>
-                        <label class="flex items-center space-x-2"><input type="checkbox" class="sumber-referensi-checkbox" value="Buku"><span class="text-sm">Buku</span></label>
                     </div>
                 </div>
 
@@ -246,6 +282,7 @@
         const floatingToolbar = document.getElementById('floating-toolbar');
         const strukturContainer = document.getElementById('struktur-dokumen-container');
         const viewModeControls = document.getElementById('view-mode-controls');
+        const jenisDokumenSelect = document.getElementById('jenis-dokumen');
 
         let processData = []; 
         let formInputs = {};
@@ -254,16 +291,54 @@
         let activeSelectionRange = null; 
         let storedImages = []; 
 
-        async function callTextAPI(prompt, images = []) {
+        const documentStructures = {
+            'Default': ["Pendahuluan", "Pembahasan", "Kesimpulan"],
+            'Skripsi': ["Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1: Pendahuluan", "Bab 2: Tinjauan Pustaka", "Bab 3: Metodologi", "Bab 4: Hasil & Pembahasan", "Bab 5: Kesimpulan", "Daftar Pustaka", "Lampiran"],
+            'Tesis': ["Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1: Pendahuluan", "Bab 2: Tinjauan Pustaka", "Bab 3: Metodologi", "Bab 4: Hasil & Pembahasan", "Bab 5: Kesimpulan", "Daftar Pustaka", "Lampiran"],
+            'Disertasi': ["Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1: Pendahuluan", "Bab 2: Tinjauan Pustaka", "Bab 3: Metodologi", "Bab 4: Hasil & Pembahasan", "Bab 5: Kesimpulan", "Daftar Pustaka", "Lampiran"],
+            'Jurnal Ilmiah': ['Abstrak', 'Pendahuluan', 'Metode Penelitian', 'Hasil dan Pembahasan', 'Kesimpulan', 'Daftar Pustaka'],
+            'Proposal Penelitian': ['Latar Belakang', 'Rumusan Masalah', 'Tujuan dan Manfaat', 'Tinjauan Pustaka', 'Metode Penelitian', 'Jadwal Penelitian'],
+            'Makalah': ['Pendahuluan', 'Pembahasan', 'Penutup', 'Daftar Pustaka'],
+            'Esai': ['Pendahuluan', 'Paragraf Isi 1', 'Paragraf Isi 2', 'Paragraf Isi 3', 'Kesimpulan'],
+            'Pidato': ['Pembukaan (Salam & Sapaan)', 'Isi Pidato', 'Penutup (Kesimpulan & Salam)'],
+            'Cerita Pendek': ['Orientasi', 'Komplikasi', 'Klimaks', 'Resolusi'],
+            'Novel': ['Bab 1', 'Bab 2', 'Bab 3', 'Bab 4', 'Bab 5', 'Epilog'],
+            'Naskah Film': ['Scene 1', 'Scene 2', 'Scene 3', 'Scene 4', 'Scene 5'],
+        };
+        
+        async function callTextAPI(prompt, images = [], useSearch = false) {
             const apiKeyToUse = userApiKey || "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKeyToUse}`;
+            
             const parts = [{ text: prompt }];
             images.forEach(imgData => parts.push({ inlineData: { mimeType: imgData.fileType, data: imgData.base64 } }));
+
+            const payload = {
+                contents: [{ parts }]
+            };
+
+            if (useSearch) {
+                payload.tools = [{ "google_search": {} }];
+            }
+
             try {
-                const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts }] }) });
+                const response = await fetch(API_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message || `HTTP error! Status: ${response.status}`); }
                 const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
+                
+                const text = data.candidates[0].content.parts[0].text;
+                let citations = [];
+                if (data.candidates[0].groundingMetadata && data.candidates[0].groundingMetadata.groundingAttributions) {
+                    citations = data.candidates[0].groundingMetadata.groundingAttributions
+                        .map(attr => ({ title: attr.web?.title, url: attr.web?.uri }))
+                        .filter(c => c.url);
+                }
+                
+                return { text, citations };
             } catch (error) { console.error("Error calling Text API:", error); throw error; }
         }
 
@@ -334,8 +409,8 @@
                     outputContent.appendChild(container);
                     break;
                 case 'fulltext_generated':
-                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-2">
-                            <div id="full-text-editor-container" class="lg:col-span-2 h-full flex flex-col space-y-2">
+                    outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 p-2">
+                            <div id="full-text-editor-container" class="h-full flex flex-col space-y-2">
                                 <div class="editor-toolbar flex items-center space-x-1 p-1 bg-surface rounded-md border border-border-color/50 flex-wrap">
                                     <button data-command="undo" title="Undo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="undo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="redo" title="Redo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="redo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
@@ -363,10 +438,12 @@
                                     <button id="insert-image-btn" title="Sisipkan Gambar" class="p-2 rounded-md hover:bg-background"><i data-lucide="image-plus" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                 </div>
                                 <div id="full-text-editor" contenteditable="true" class="w-full flex-grow resize-none rounded-md bg-input-bg p-4 prose max-w-none">${marked.parse(processData[0].content)}</div>
+                                <div id="doc-stats" class="text-xs text-text-secondary text-right p-2"></div>
                             </div>
                         </div>`;
                     finalActions.classList.remove('hidden');
                     viewModeControls.classList.remove('hidden');
+                    updateWordCount(); // Initial count
                     break;
                  case 'loading':
                     outputContent.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-center text-text-secondary p-4"><i data-lucide="loader-2" class="w-16 h-16 mb-4 animate-spin"></i><h3 class="font-semibold text-text-primary">Menghubungi AI...</h3><p class="text-sm max-w-xs">Proses ini mungkin memerlukan waktu beberapa saat, harap tunggu.</p></div>`;
@@ -405,7 +482,12 @@
             if (selectedMode === 'manual') {
                 selectedSections = Array.from(document.querySelectorAll('.structure-checkbox:checked')).map(cb => cb.value);
             } else {
-                selectedSections = allPossibleSections;
+                 const isAcademic = ['Skripsi', 'Tesis', 'Disertasi', 'Jurnal Ilmiah', 'Proposal Penelitian'].includes(docType);
+                if (isAcademic) {
+                    selectedSections = allPossibleSections;
+                } else {
+                    selectedSections = ['Pendahuluan', 'Pembahasan', 'Kesimpulan'];
+                }
             }
 
             if (!formInputs.topic || (selectedMode === 'manual' && selectedSections.length === 0)) { alert("Harap isi Topik Utama dan (jika manual) pilih minimal satu bagian struktur."); return; }
@@ -437,9 +519,9 @@
                 renderUI();
                 const sectionTitles = selectedSections.join(', ');
                 let prompt = buildPromptContext(formInputs);
-                prompt += `Tulis dokumen ilmiah lengkap. Sertakan bagian: ${sectionTitles}. Format: satu teks Markdown panjang.`;
+                prompt += `Tulis dokumen ilmiah lengkap dan siap pakai. Sertakan bagian: ${sectionTitles}. Jangan gunakan kata 'Bab' jika tidak relevan untuk tipe dokumen ini. Format: satu teks Markdown panjang.`;
                 try {
-                    const aiResponse = await callTextAPI(prompt, formInputs.uploadedImages);
+                    const { text: aiResponse } = await callTextAPI(prompt, formInputs.uploadedImages, true);
                     processData = [{ content: aiResponse }];
                     currentStage = 'fulltext_generated';
                 } catch (error) { alert(`Gagal: ${error.message}`); currentStage = 'initial'; }
@@ -577,7 +659,7 @@
                 }
 
                 button.disabled = true;
-                button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>Loading</span>`;
+                button.innerHTML = `<i data-lucide="search" class="animate-pulse w-4 h-4"></i><span>Riset...</span>`;
                 lucide.createIcons();
 
                 const currentTitle = document.querySelector(`.title-input[data-id="${sectionId}"]`).value;
@@ -593,37 +675,22 @@
                         if(section.customInstructions.words) prompt += `- Target panjang tulisan sekitar ${section.customInstructions.words} kata.\n`;
                         if(section.customInstructions.focus) prompt += `- Fokus utama: ${section.customInstructions.focus}\n`;
                     }
-                    prompt += `Pastikan kontennya lengkap, mendalam, siap pakai, dan bukan contoh. Format: Markdown.`;
+                    prompt += `Pastikan kontennya lengkap, mendalam, siap pakai, dan bukan contoh. Gunakan sumber terpercaya yang kamu temukan untuk mendukung argumen. Format: Markdown.`;
                 } else { 
                     prompt += `Konteks dari seluruh bab inti dokumen adalah sebagai berikut:\n---\n${context}\n---\n\n`;
-                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi (Table of Contents) yang terstruktur. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'. Ini harus berupa hasil jadi, bukan contoh.`;
-                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas, buatkan contoh Daftar Pustaka yang relevan. Gunakan gaya sitasi ${formInputs.citationStyle}. Buat 3-5 entri fiktif namun realistis.`;
+                    if (currentTitle.includes("Daftar Isi")) prompt += `Berdasarkan konteks di atas, buatkan Daftar Isi (Table of Contents) yang terstruktur. Gunakan titik-titik (.......) untuk menghubungkan judul bagian dengan nomor halaman fiktif. Contoh: 'Bab 1: Pendahuluan ........ 1'.`;
+                    else if (currentTitle.includes("Daftar Pustaka")) prompt += `Berdasarkan konteks di atas dan kutipan yang telah digunakan, buatkan Daftar Pustaka yang relevan dan akurat. Gunakan gaya sitasi ${formInputs.citationStyle}. Pastikan menyertakan link URL asli dari sumber yang kamu temukan.`;
                     else if (currentTitle.includes("Daftar Tabel") || currentTitle.includes("Daftar Gambar")) prompt += `Berdasarkan konteks di atas, pindai teks dan buatlah ${currentTitle} yang sesuai. Jika tidak ada tabel/gambar eksplisit, buat contoh yang relevan.`;
                     else if (currentTitle.includes("Lampiran")) prompt += `Berdasarkan konteks di atas, buatkan contoh Lampiran yang relevan (misal: kuesioner, transkrip wawancara).`;
                 }
+                
+                prompt += `\n\nInstruksi Penting: Anda **harus** memparafrasekan semua informasi dari sumber yang diberikan untuk memastikan 0% plagiarisme dan tidak terdeteksi sebagai tulisan AI. Jangan menyalin kalimat secara langsung. Tulis ulang dengan gaya bahasa akademik Anda sendiri yang unik dan profesional. Balas HANYA dengan konten bagian yang diminta, tanpa kalimat pembuka atau penutup.`;
 
                 try {
-                    let aiResponse = "";
-                    const partsToGenerate = (section.isCoreContent && section.customInstructions) ? parseInt(section.customInstructions.parts) : 1;
+                    button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>Menulis...</span>`;
+                    lucide.createIcons();
                     
-                    if (partsToGenerate > 1) {
-                        const planPrompt = `Anda adalah perencana. Berdasarkan instruksi: "Tulis bab '${currentTitle}' dengan fokus pada: ${section.customInstructions.focus || 'pembahasan komprehensif'}", pecah penulisan bab ini menjadi ${partsToGenerate} sub-bagian logis. Balas HANYA dengan JSON array. Contoh: ["Sub 1", "Sub 2"]`;
-                        const planResponse = await callTextAPI(planPrompt);
-                        const subSections = JSON.parse(planResponse.replace(/```json|```/g, ''));
-                        let accumulatedContent = "";
-                        for (let i = 0; i < subSections.length; i++) {
-                            const subSectionTitle = subSections[i];
-                            button.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i><span>${i+1}/${subSections.length}</span>`;
-                            lucide.createIcons();
-                            let subPrompt = buildPromptContext(formInputs);
-                            subPrompt += `Konteks:\n---\n${context}\n${accumulatedContent}\n---\n\nLanjutkan dengan menulis sub-bagian "${subSectionTitle}" untuk bab "${currentTitle}". Pastikan kontennya lengkap dan siap pakai.`;
-                            const subResponse = await callTextAPI(subPrompt, formInputs.uploadedImages);
-                            accumulatedContent += `### ${subSectionTitle}\n\n` + subResponse + "\n\n";
-                        }
-                        aiResponse = accumulatedContent;
-                    } else {
-                        aiResponse = await callTextAPI(prompt, formInputs.uploadedImages);
-                    }
+                    const { text: aiResponse } = await callTextAPI(prompt, formInputs.uploadedImages, true);
                     
                     section.content = aiResponse;
                     section.isGenerated = true;
@@ -660,7 +727,7 @@
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 const prompt = `Anda asisten dokumen. Berdasarkan DOKUMEN:\n---\n${fullText}\n---\n\nJawab: "${userQuery}"`;
                 try {
-                    const aiResponse = await callTextAPI(prompt, formInputs.uploadedImages);
+                    const { text: aiResponse } = await callTextAPI(prompt, formInputs.uploadedImages, true);
                     messagesContainer.innerHTML += `<div class="p-2 bg-background rounded-lg">${marked.parse(aiResponse)}</div>`;
                     messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 } catch (error) { messagesContainer.innerHTML += `<div class="p-2 bg-red-100 text-red-700 rounded-lg">Error.</div>`; }
@@ -722,7 +789,7 @@
             }
             
             try {
-                const aiResponse = await callTextAPI(prompt);
+                const { text: aiResponse } = await callTextAPI(prompt);
                 const selection = window.getSelection();
                 selection.removeAllRanges();
                 selection.addRange(activeSelectionRange);
@@ -740,7 +807,16 @@
             }
         });
         
-        outputContent.addEventListener('input', (e) => { if (e.target.classList.contains('title-input')) { const section = processData.find(p => p.id === e.target.dataset.id); if(section) section.title = e.target.value; } });
+        outputContent.addEventListener('input', (e) => { 
+            if (e.target.classList.contains('title-input')) { 
+                const section = processData.find(p => p.id === e.target.dataset.id); 
+                if(section) section.title = e.target.value; 
+            }
+            if(e.target.id === 'full-text-editor') {
+                localStorage.setItem('autosave_content', e.target.innerHTML);
+                updateWordCount();
+            }
+        });
         outputContent.addEventListener('change', (e) => {
             if (e.target.classList.contains('format-select')) {
                 document.execCommand(e.target.dataset.command, false, e.target.value);
@@ -750,15 +826,12 @@
         finalActions.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
             if (!button) return;
-
             const editor = document.getElementById('full-text-editor');
             if (!editor) return alert('Editor tidak ditemukan.');
-            
             const docTitle = formInputs.docType || 'dokumen-ai';
             const originalIcon = button.innerHTML;
             button.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 text-text-secondary animate-spin"></i>`;
             lucide.createIcons();
-
             try {
                 if (button.id === 'download-docx-btn') {
                     if (typeof htmlDocx === 'undefined' || typeof saveAs === 'undefined') throw new Error('Pustaka ekspor DOCX belum siap.');
@@ -825,7 +898,25 @@
             alert('Pengaturan disimpan!'); 
             toggleModal(); 
         });
-        document.getElementById('jenis-dokumen').addEventListener('change', (e) => document.getElementById('custom-type-container').classList.toggle('hidden', e.target.value !== 'Custom'));
+        
+        jenisDokumenSelect.addEventListener('change', (e) => {
+            document.getElementById('custom-type-container').classList.toggle('hidden', e.target.value !== 'Custom');
+            updateStructureOptions(e.target.value);
+        });
+
+        function updateStructureOptions(docType) {
+            const container = document.getElementById('struktur-checkboxes');
+            if (!container) return;
+            const structures = documentStructures[docType] || documentStructures['Default'];
+            container.innerHTML = '';
+            structures.forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center space-x-2';
+                label.innerHTML = `<input type="checkbox" class="structure-checkbox" value="${item}" checked><span class="text-sm">${item.split(':')[0]}</span>`;
+                container.appendChild(label);
+            });
+        }
+        updateStructureOptions(jenisDokumenSelect.value); // Initial call
 
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
@@ -976,18 +1067,19 @@
             lucide.createIcons();
             
             try {
-                const imageUrl = await callImageAPI(`photo of ${query}`);
-                 resultsContainer.innerHTML = '';
-                 const imgEl = document.createElement('img');
-                 imgEl.src = imageUrl;
-                 imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
-                 imgEl.onclick = () => {
-                    const editor = document.getElementById('full-text-editor');
-                    editor.focus();
-                    document.execCommand('insertHTML', false, `<img src="${imageUrl}" alt="${query}" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
-                    insertImageModal.classList.add('hidden');
-                };
-                resultsContainer.appendChild(imgEl);
+                resultsContainer.innerHTML = '';
+                for(let i=0; i<12; i++){
+                    const imgEl = document.createElement('img');
+                    imgEl.src = `https://source.unsplash.com/random/300x200/?${query}&sig=${Math.random()}`;
+                    imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
+                    imgEl.onclick = () => {
+                        const editor = document.getElementById('full-text-editor');
+                        editor.focus();
+                        document.execCommand('insertHTML', false, `<img src="${imgEl.src}" alt="${query}" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
+                        insertImageModal.classList.add('hidden');
+                    };
+                    resultsContainer.appendChild(imgEl);
+                }
             } catch(error) {
                  resultsContainer.innerHTML = `<p class="text-red-500 col-span-full text-center">Gagal mencari gambar.</p>`;
             }
@@ -997,10 +1089,20 @@
         closeInsertImageModalBtn.addEventListener('click', toggleInsertImageModal);
         insertImageOverlay.addEventListener('click', toggleInsertImageModal);
         
+        function updateWordCount() {
+            const editor = document.getElementById('full-text-editor');
+            const stats = document.getElementById('doc-stats');
+            if (editor && stats) {
+                const text = editor.innerText || '';
+                const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+                const readingTime = Math.ceil(wordCount / 200);
+                stats.textContent = `${wordCount} kata | Perkiraan ${readingTime} menit baca`;
+            }
+        }
+        
         renderUI();
     });
     </script>
 </body>
 </html>
-
 
