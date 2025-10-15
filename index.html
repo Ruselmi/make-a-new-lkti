@@ -60,11 +60,17 @@
         .book-view-active { @apply bg-gray-300; }
         [data-theme="night"] .book-view-active, [data-theme="planet"] .book-view-active, [data-theme="ai"] .book-view-active { @apply bg-gray-800; }
         
-        .book-view-active #editor-toolbar, .book-view-active #ai-assistant-panel { @apply hidden; }
+        .book-view-active .editor-toolbar, .book-view-active #ai-assistant-panel { @apply hidden; }
         .book-view-active #editor-grid { @apply grid-cols-1; }
         .book-view-active #full-text-editor-container { @apply p-4 sm:p-8; }
         .book-view-active #full-text-editor { 
-            @apply w-full max-w-[210mm] min-h-[297mm] mx-auto p-12 sm:p-16 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
+            @apply w-full mx-auto p-8 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
+            aspect-ratio: 210 / 297;
+        }
+        @media (min-width: 768px) {
+            .book-view-active #full-text-editor {
+                @apply max-w-[210mm] min-h-[297mm] p-16;
+            }
         }
         .book-view-active #full-text-editor.prose h1 { @apply text-2xl font-bold text-center !text-black; }
         .book-view-active #full-text-editor.prose h2 { @apply text-xl font-bold !text-black; }
@@ -85,9 +91,9 @@
         <!-- PANEL KIRI: INPUT -->
         <div class="flex flex-col h-full p-6 space-y-4 rounded-xl bg-surface shadow-2xl opacity-0 animate-fade-in ring-1 ring-border-color/20">
             <header class="flex items-center justify-between">
-                <div class="flex items-center space-x-3"><i data-lucide="brain-circuit" class="w-8 h-8 text-primary"></i><div><h1 class="text-xl font-bold text-text-primary">hallo assisten ai untukmu</h1><p class="text-sm text-text-secondary">AI Document Editor</p></div></div>
+                <div class="flex items-center space-x-3"><i data-lucide="brain-circuit" class="w-8 h-8 text-primary"></i><div><h1 class="text-xl font-bold text-text-primary">AutoBab Universal Pro</h1><p class="text-sm text-text-secondary">AI Document Editor</p></div></div>
                 <div class="flex items-center space-x-2">
-                    <a href="./assistant/chat.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
+                    <a href="chat.html" target="_blank" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Buka AI Assistant">
                         <i data-lucide="bot" class="w-5 h-5 text-text-secondary"></i>
                     </a>
                     <button id="settings-btn" class="p-2 rounded-full hover:bg-border-color/50 transition-colors"><i data-lucide="settings-2" class="w-5 h-5 text-text-secondary"></i></button>
@@ -329,7 +335,7 @@
                     break;
                 case 'fulltext_generated':
                     outputContent.innerHTML = `<div id="editor-grid" class="h-full grid grid-cols-1 lg:grid-cols-3 gap-4 p-2">
-                            <div id="full-text-editor-container" class="lg:col-span-3 h-full flex flex-col space-y-2">
+                            <div id="full-text-editor-container" class="lg:col-span-2 h-full flex flex-col space-y-2">
                                 <div class="editor-toolbar flex items-center space-x-1 p-1 bg-surface rounded-md border border-border-color/50 flex-wrap">
                                     <button data-command="undo" title="Undo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="undo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
                                     <button data-command="redo" title="Redo" class="format-btn p-2 rounded-md hover:bg-background"><i data-lucide="redo-2" class="w-4 h-4 text-text-secondary pointer-events-none"></i></button>
@@ -824,7 +830,6 @@
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
             if (!button) return;
-
             const outputPanel = document.getElementById('output-content');
             outputPanel.classList.toggle('book-view-active');
             
@@ -997,4 +1002,5 @@
     </script>
 </body>
 </html>
+
 
