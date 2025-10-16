@@ -290,6 +290,7 @@
         let currentStage = 'initial';
         let activeSelectionRange = null; 
         let storedImages = []; 
+        let foundReferences = [];
 
         const documentStructures = {
             'Default': ["Pendahuluan", "Pembahasan", "Kesimpulan"],
@@ -305,7 +306,7 @@
             'Novel': ['Bab 1', 'Bab 2', 'Bab 3', 'Bab 4', 'Bab 5', 'Epilog'],
             'Naskah Film': ['Scene 1', 'Scene 2', 'Scene 3', 'Scene 4', 'Scene 5'],
         };
-        
+
         async function callTextAPI(prompt, images = [], useSearch = false) {
             const apiKeyToUse = userApiKey || "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKeyToUse}`;
@@ -475,22 +476,18 @@
                 uploadedImages: storedImages
             };
             
-            const allPossibleSections = ["Daftar Isi", "Daftar Tabel", "Daftar Gambar", "Bab 1: Pendahuluan", "Bab 2: Tinjauan Pustaka", "Bab 3: Metodologi", "Bab 4: Hasil & Pembahasan", "Bab 5: Kesimpulan", "Daftar Pustaka", "Lampiran"];
-            const coreContentKeywords = ['bab'];
+            const coreContentKeywords = ['bab', 'pendahuluan', 'pembahasan', 'penutup', 'isi'];
             let selectedSections;
 
             if (selectedMode === 'manual') {
                 selectedSections = Array.from(document.querySelectorAll('.structure-checkbox:checked')).map(cb => cb.value);
             } else {
-                 const isAcademic = ['Skripsi', 'Tesis', 'Disertasi', 'Jurnal Ilmiah', 'Proposal Penelitian'].includes(docType);
-                if (isAcademic) {
-                    selectedSections = allPossibleSections;
-                } else {
-                    selectedSections = ['Pendahuluan', 'Pembahasan', 'Kesimpulan'];
-                }
+                selectedSections = documentStructures[docType] || documentStructures['Default'];
             }
 
-            if (!formInputs.topic || (selectedMode === 'manual' && selectedSections.length === 0)) { alert("Harap isi Topik Utama dan (jika manual) pilih minimal satu bagian struktur."); return; }
+            if (!formInputs.topic) { alert("Harap isi Topik Utama."); return; }
+            if (selectedMode === 'manual' && selectedSections.length === 0) { alert("Pilih minimal satu bagian struktur untuk Mode Manual."); return; }
+
 
             processData = selectedSections.map((title) => ({
                 id: title.replace(/[^a-zA-Z0-9]/g, '-'),
@@ -519,7 +516,7 @@
                 renderUI();
                 const sectionTitles = selectedSections.join(', ');
                 let prompt = buildPromptContext(formInputs);
-                prompt += `Tulis dokumen ilmiah lengkap dan siap pakai. Sertakan bagian: ${sectionTitles}. Jangan gunakan kata 'Bab' jika tidak relevan untuk tipe dokumen ini. Format: satu teks Markdown panjang.`;
+                prompt += `Tulis dokumen lengkap dan siap pakai. Gunakan struktur yang sesuai untuk ${formInputs.docType} (bukan format bab jika tidak cocok). Sertakan bagian: ${sectionTitles}. Format: satu teks Markdown panjang.`;
                 try {
                     const { text: aiResponse } = await callTextAPI(prompt, formInputs.uploadedImages, true);
                     processData = [{ content: aiResponse }];
@@ -535,7 +532,7 @@
 
         function buildPromptContext(inputs) {
             let context = `Anda adalah penulis akademik ahli B. Indonesia.\n`;
-            context += `Tulis untuk dokumen ilmiah (${inputs.docType}) dengan topik "${inputs.topic}" dan gaya sitasi ${inputs.citationStyle}.\n`;
+            context += `Tulis untuk dokumen (${inputs.docType}) dengan topik "${inputs.topic}" dan gaya sitasi ${inputs.citationStyle}.\n`;
             if (inputs.minYear && inputs.maxYear) context += `Gunakan referensi dari rentang tahun ${inputs.minYear} hingga ${inputs.maxYear}.\n`;
             if (inputs.refSources && inputs.refSources.length > 0) context += `Prioritaskan sumber referensi dari: ${inputs.refSources.join(', ')}.\n`;
             
@@ -916,7 +913,7 @@
                 container.appendChild(label);
             });
         }
-        updateStructureOptions(jenisDokumenSelect.value); // Initial call
+        updateStructureOptions(jenisDokumenSelect.value);
 
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
