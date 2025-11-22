@@ -21,12 +21,11 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" defer></script>
 
-    <!-- Pustaka Ekspor -->
+    <!-- Pustaka Ekspor & PDF -->
+    <!-- html-docx-js untuk Word -->
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
-    <!-- Pustaka PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <!-- html2pdf.js untuk PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 
     <script>
         tailwind.config = {
@@ -58,7 +57,7 @@
         #floating-toolbar { transition: opacity 0.2s, top 0.1s; }
         
         /* Styling untuk Rich Text Editor */
-        #full-text-editor.prose { @apply leading-relaxed text-justify; } /* Added line-height and justify */
+        #full-text-editor.prose { @apply leading-relaxed text-justify; } 
         #full-text-editor.prose h1, #full-text-editor.prose h2, #full-text-editor.prose h3 { @apply text-text-primary mt-6 mb-4; }
         #full-text-editor.prose p, #full-text-editor.prose li, #full-text-editor.prose blockquote { @apply text-text-secondary mb-4; }
         #full-text-editor.prose strong { @apply text-text-primary font-bold; }
@@ -82,11 +81,11 @@
         .book-view-active #full-text-editor-container { @apply p-4 sm:p-8; }
         .book-view-active #full-text-editor { 
             @apply w-full mx-auto p-8 bg-white text-black shadow-2xl font-serif text-[12pt] leading-loose;
-            aspect-ratio: 210 / 297;
+            min-height: 297mm;
         }
         @media (min-width: 768px) {
             .book-view-active #full-text-editor {
-                @apply max-w-[210mm] min-h-[297mm] p-16;
+                @apply max-w-[210mm] p-16;
             }
         }
         .book-view-active #full-text-editor.prose h1 { @apply text-2xl font-bold text-center !text-black; }
@@ -752,7 +751,7 @@
         });
         
         // -----------------------------------------------------------------
-        // PERBAIKAN: MENGEMBALIKAN FUNGSI & LISTENER YANG HILANG
+        // FUNGSI PENTING: UPDATE STRUKTUR & DOWNLOAD HELPER
         // -----------------------------------------------------------------
 
         // Listener untuk Update Struktur saat Jenis Dokumen Berubah
@@ -951,6 +950,96 @@
                 stats.textContent = `${wordCount} kata | Perkiraan ${readingTime} menit baca`;
             }
         }
+        
+        // FUNGSI BANTUAN: DOWNLOAD FORCE (NATIVE FALLBACK)
+        // Menggunakan anchor tag jika FileSaver gagal atau diblokir
+        function forceDownload(blob, filename) {
+            if (window.saveAs) {
+                window.saveAs(blob, filename);
+            } else {
+                // Fallback Native
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+        }
+
+        // LOGIKA DOWNLOAD YANG SUDAH DIPERBAIKI
+        finalActions.addEventListener('click', async (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+            const editor = document.getElementById('full-text-editor');
+            if (!editor) return alert('Editor tidak ditemukan.');
+            
+            // Ambil judul yang aman
+            const rawTitle = (formInputs && formInputs.docType) ? formInputs.docType : 'dokumen-ai';
+            const docTitle = rawTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            
+            const originalIcon = button.innerHTML;
+            button.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 text-text-secondary animate-spin"></i>`;
+            lucide.createIcons();
+            
+            try {
+                if (button.id === 'download-docx-btn') {
+                    // Cek library DOCX
+                    if (typeof htmlDocx === 'undefined' && window.htmlDocx) htmlDocx = window.htmlDocx;
+                    if (typeof htmlDocx === 'undefined') throw new Error('Pustaka DOCX gagal dimuat. Coba refresh halaman.');
+                    
+                    // Bungkus HTML agar format lebih rapi di Word
+                    const content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } h1, h2 { color: black; } img { max-width: 100%; height: auto; }</style></head><body>${editor.innerHTML}</body></html>`;
+                    
+                    const fileBlob = htmlDocx.asBlob(content);
+                    forceDownload(fileBlob, `${docTitle}.docx`);
+                    
+                } else if (button.id === 'download-txt-btn') {
+                    const textContent = editor.innerText;
+                    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+                    forceDownload(blob, `${docTitle}.txt`);
+                    
+                } else if (button.id === 'download-pdf-btn') {
+                    // Menggunakan html2pdf.js untuk pagination otomatis
+                    if (typeof html2pdf === 'undefined') throw new Error('Pustaka PDF belum siap.');
+                    
+                    const element = editor;
+                    const opt = {
+                      margin:       15, // Margin (mm)
+                      filename:     `${docTitle}.pdf`,
+                      image:        { type: 'jpeg', quality: 0.98 },
+                      html2canvas:  { scale: 2, useCORS: true, logging: false }, // useCORS penting untuk gambar eksternal
+                      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+                    };
+                    
+                    await html2pdf().set(opt).from(element).save();
+                    
+                } else if (button.id === 'download-csv-btn') {
+                    let textContent = editor.innerText;
+                    textContent = `"${textContent.replace(/"/g, '""')}"`;
+                    const blob = new Blob([textContent], { type: "text/csv;charset=utf-8" });
+                    forceDownload(blob, `${docTitle}.csv`);
+                    
+                } else if (button.id === 'copy-btn') {
+                    const textContent = editor.innerText;
+                    navigator.clipboard.writeText(textContent);
+                    button.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-green-500"></i>';
+                    lucide.createIcons();
+                    setTimeout(() => { button.innerHTML = originalIcon; lucide.createIcons(); }, 2000);
+                    return; 
+                }
+            } catch(err) {
+                console.error('Ekspor Gagal:', err);
+                alert(`Gagal Mengunduh: ${err.message}`);
+            }
+            
+            button.innerHTML = originalIcon;
+            lucide.createIcons();
+        });
         
         // Render UI Awal
         renderUI();
