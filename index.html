@@ -9,9 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- CSS & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest" defer></script>
+    
+    <!-- Markdown Parser -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    
+    <!-- Math Rendering (KaTeX) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" defer></script>
+
     <!-- Pustaka Ekspor -->
     <script src="https://unpkg.com/html-docx-js/dist/html-docx.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
@@ -58,6 +67,10 @@
         #full-text-editor.prose a { @apply text-primary hover:underline; }
         #full-text-editor:focus { @apply outline-none ring-2 ring-primary; }
         #full-text-editor img { @apply max-w-full h-auto rounded-md my-4 mx-auto shadow-lg; }
+        
+        /* KaTeX Corrections */
+        .katex { font-size: 1.1em; }
+        
         .editor-toolbar { position: sticky; top: 1rem; z-index: 10; }
         
         /* Styling untuk Book View */
@@ -173,6 +186,15 @@
                 <div>
                     <label class="block text-sm font-medium text-text-secondary mb-2">Opsi Tambahan</label>
                     <div class="flex flex-col space-y-2 p-3 bg-background rounded-md border border-border-color/50">
+                        <!-- Fitur Baru: Referensi Khusus -->
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" id="use-custom-refs" class="form-checkbox" value="Custom Refs">
+                                <span class="text-sm font-semibold text-primary">Gunakan Referensi Khusus (Jurnal/Buku/Link)</span>
+                            </label>
+                            <textarea id="custom-refs-input" class="hidden w-full p-2 text-sm rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none transition-all" rows="4" placeholder="Tempel daftar referensi Anda di sini (Judul, Penulis, Link, atau Abstrak). AI akan mencari kutipan dari sini."></textarea>
+                        </div>
+                        
                         <div class="space-y-2">
                             <label class="flex items-center space-x-2">
                                 <input type="checkbox" id="sertakan-data" class="form-checkbox" value="Data/Tabel">
@@ -249,7 +271,7 @@
             <select id="ai-model-select" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none">
                 <option value="gemini-2.5-flash-preview-09-2025" selected>Gemini 2.5 Flash (Tercepat & Terbaru)</option>
                 <option value="gemini-1.5-pro">Gemini 1.5 Pro (Lebih Stabil)</option>
-                <option value="gemini-3.0">Gemini 3.0 (Experimental / Alpha)</option>
+                <option value="gemini-3.0">Gemini 3.0</option>
             </select>
         </div>
         <div>
@@ -283,7 +305,14 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
+        
+        // Configure marked
+        marked.setOptions({
+            breaks: true, // Interpret newlines as <br>
+            gfm: true
+        });
 
+        const apiKey = "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
         // ----------------------------------------------------
         // KONFIGURASI AI (REAL, BUKAN SIMULASI)
         // ----------------------------------------------------
@@ -319,7 +348,7 @@
         };
 
         async function callTextAPI(prompt, images = [], useSearch = false) {
-            const apiKeyToUse = userApiKey || "AIzaSyC0GYWD9FiLXcVHDLt_VbSmKAMl0oieIAY"; // API Key Fallback
+            const apiKeyToUse = userApiKey || apiKey; 
             
             // MENGGUNAKAN MODEL YANG DIPILIH SECARA DINAMIS
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${currentTextModel}:generateContent?key=${apiKeyToUse}`;
@@ -357,7 +386,7 @@
         }
 
         async function callImageAPI(prompt) {
-            const apiKeyToUse = userApiKey || "AIzaSyC0GYWD9FiLXcVHDLt_VbSmKAMl0oieIAY";
+            const apiKeyToUse = userApiKey || apiKey;
             
              // MENGGUNAKAN MODEL YANG DIPILIH SECARA DINAMIS
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${currentImageModel}:predict?key=${apiKeyToUse}`;
@@ -458,6 +487,20 @@
                         </div>`;
                     finalActions.classList.remove('hidden');
                     viewModeControls.classList.remove('hidden');
+                    
+                    // RENDER MATH WITH KATEX
+                    if (window.renderMathInElement) {
+                        renderMathInElement(document.getElementById('full-text-editor'), {
+                            delimiters: [
+                                {left: '$$', right: '$$', display: true},
+                                {left: '$', right: '$', display: false},
+                                {left: '\\(', right: '\\)', display: false},
+                                {left: '\\[', right: '\\]', display: true}
+                            ],
+                            throwOnError: false
+                        });
+                    }
+                    
                     updateWordCount(); 
                     break;
                  case 'loading':
@@ -477,6 +520,11 @@
             const selectedMode = document.querySelector('input[name="mode"]:checked').value;
             let docType = document.getElementById('jenis-dokumen').value;
             if (docType === 'Custom') docType = document.getElementById('custom-type-input').value || 'Dokumen Custom';
+            
+            // CAPTURE CUSTOM REFS
+            const useCustomRefs = document.getElementById('use-custom-refs').checked;
+            const customRefsValue = document.getElementById('custom-refs-input').value;
+
             formInputs = { 
                 topic: document.getElementById('topik-utama').value, 
                 citationStyle: document.getElementById('gaya-sitasi').value, 
@@ -486,7 +534,9 @@
                 includeData: document.getElementById('sertakan-data').checked,
                 dataRefs: document.getElementById('referensi-data-input').value,
                 includePhoto: document.getElementById('sertakan-foto').checked,
-                uploadedImages: storedImages
+                uploadedImages: storedImages,
+                // ADD TO INPUTS OBJECT
+                customRefs: useCustomRefs ? customRefsValue : null 
             };
             
             // KEYWORDS UNTUK MENDETEKSI BAB INT
@@ -557,7 +607,17 @@
             context += `TUGAS: Susun dokumen bertipe '${inputs.docType}' dengan topik spesifik: "${inputs.topic}".\n`;
             context += `GAYA PENULISAN: Formal, objektif, analitis, dan mengikuti kaidah PUEBI. Gunakan gaya sitasi ${inputs.citationStyle}.\n`;
             
-            if (inputs.minYear && inputs.maxYear) context += `BATASAN REFERENSI: Gunakan referensi/sumber data terkini antara tahun ${inputs.minYear} hingga ${inputs.maxYear}.\n`;
+            // CUSTOM REFS LOGIC
+            if (inputs.customRefs) {
+                context += `\nREFERENSI WAJIB (PRIORITAS TERTINGGI):
+                Berikut adalah daftar referensi yang DITENTUKAN OLEH PENGGUNA. Anda WAJIB menggunakan sumber-sumber ini sebagai landasan utama sitasi dan kutipan.
+                --- MULAI DAFTAR REFERENSI ---
+                ${inputs.customRefs}
+                --- SELESAI DAFTAR REFERENSI ---
+                INSTRUKSI SITASI: Integrasikan referensi di atas ke dalam teks secara relevan (misal: 'Menurut [Nama], 20xx...'). Jika informasi kurang, baru boleh mencari sumber tambahan.\n`;
+            } else {
+                if (inputs.minYear && inputs.maxYear) context += `BATASAN REFERENSI: Gunakan referensi/sumber data terkini antara tahun ${inputs.minYear} hingga ${inputs.maxYear}.\n`;
+            }
             
             if (inputs.includeData) {
                 context += `- DATA: Sertakan analisis berbasis data/tabel. `;
@@ -675,172 +735,33 @@
             }
         });
         
-        document.addEventListener('selectionchange', () => {
-            const editor = document.getElementById('full-text-editor');
-            if (!editor || !document.contains(editor) || document.activeElement !== editor) {
-                floatingToolbar.classList.add('hidden', 'opacity-0');
-                activeSelectionRange = null; 
-                return;
-            }
-            const selection = window.getSelection();
-            if (selection.toString().trim().length > 5) {
-                const range = selection.getRangeAt(0);
-                activeSelectionRange = range.cloneRange(); 
-                const rect = range.getBoundingClientRect();
-                floatingToolbar.style.top = `${rect.top - 45 + window.scrollY}px`;
-                floatingToolbar.style.left = `${rect.left + (rect.width / 2) - (floatingToolbar.offsetWidth / 2) + window.scrollX}px`;
-                floatingToolbar.classList.remove('hidden', 'opacity-0');
-            } else {
-                floatingToolbar.classList.add('hidden', 'opacity-0');
-                activeSelectionRange = null;
+        // Event listener untuk toggle input custom references
+        document.getElementById('use-custom-refs').addEventListener('change', e => {
+            document.getElementById('custom-refs-input').classList.toggle('hidden', !e.target.checked);
+        });
+        
+        document.getElementById('sertakan-data').addEventListener('change', e => {
+            document.getElementById('referensi-data-input').classList.toggle('hidden', !e.target.checked);
+        });
+        document.getElementById('sertakan-foto').addEventListener('change', e => {
+            document.getElementById('image-upload-container').classList.toggle('hidden', !e.target.checked);
+            if (!e.target.checked) {
+                storedImages = [];
+                document.getElementById('image-preview-container').innerHTML = '';
             }
         });
+        
+        // -----------------------------------------------------------------
+        // PERBAIKAN: MENGEMBALIKAN FUNGSI & LISTENER YANG HILANG
+        // -----------------------------------------------------------------
 
-        floatingToolbar.addEventListener('click', async (e) => {
-            const target = e.target.closest('.toolbar-btn, .toolbar-select');
-            if (!target || !activeSelectionRange) return; 
-            
-            const action = target.dataset.action;
-            const selectedText = activeSelectionRange.toString();
-            
-            let prompt;
-            if (action === 'tone') {
-                const tone = target.value;
-                if(!tone) return;
-                prompt = `Tulis ulang teks berikut dengan nada ${tone}: "${selectedText}"`;
-            } else {
-                 switch(action) {
-                    case 'parafrase': prompt = `Lakukan parafrase pada teks berikut agar lebih unik namun makna tetap sama: "${selectedText}"`; break;
-                    case 'perpanjang': prompt = `Kembangkan dan perpanjang penjelasan dari teks berikut: "${selectedText}"`; break;
-                    case 'rangkum': prompt = `Buat ringkasan padat dari teks berikut: "${selectedText}"`; break;
-                    case 'terjemahkan': prompt = `Terjemahkan teks berikut ke Bahasa Inggris (akademik): "${selectedText}"`; break;
-                }
-            }
-
-            if(!prompt) return;
-            
-            const originalValue = (target.tagName === 'SELECT') ? target.value : null;
-            const originalContent = (target.tagName === 'BUTTON') ? target.innerHTML : null;
-            
-            if (target.tagName === 'BUTTON') {
-                target.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 text-text-secondary animate-spin"></i>`;
-                lucide.createIcons();
-            } else {
-                target.disabled = true;
-            }
-            
-            try {
-                const { text: aiResponse } = await callTextAPI(prompt);
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(activeSelectionRange);
-                document.execCommand('insertText', false, aiResponse.trim());
-            } catch (error) { alert(`Aksi gagal: ${error.message}`); }
-            finally { 
-                if(target.tagName === 'BUTTON') target.innerHTML = originalContent;
-                if(target.tagName === 'SELECT') {
-                    target.value = originalValue;
-                    target.disabled = false;
-                }
-                lucide.createIcons(); 
-                floatingToolbar.classList.add('hidden', 'opacity-0');
-                activeSelectionRange = null;
-            }
-        });
-        
-        outputContent.addEventListener('input', (e) => { 
-            if (e.target.classList.contains('title-input')) { 
-                const section = processData.find(p => p.id === e.target.dataset.id); 
-                if(section) section.title = e.target.value; 
-            }
-            if(e.target.id === 'full-text-editor') {
-                updateWordCount();
-            }
-        });
-        outputContent.addEventListener('change', (e) => {
-            if (e.target.classList.contains('format-select')) {
-                document.execCommand(e.target.dataset.command, false, e.target.value);
-            }
-        });
-        
-        finalActions.addEventListener('click', async (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-            const editor = document.getElementById('full-text-editor');
-            if (!editor) return alert('Editor tidak ditemukan.');
-            const docTitle = formInputs.docType || 'dokumen-ai';
-            const originalIcon = button.innerHTML;
-            button.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 text-text-secondary animate-spin"></i>`;
-            lucide.createIcons();
-            try {
-                if (button.id === 'download-docx-btn') {
-                    if (typeof htmlDocx === 'undefined' || typeof saveAs === 'undefined') throw new Error('Pustaka ekspor DOCX belum siap.');
-                    const htmlContent = editor.innerHTML;
-                    const sourceHTML = `<html><head><meta charset='utf-8'></head><body>${htmlContent}</body></html>`;
-                    const fileBlob = htmlDocx.asBlob(sourceHTML);
-                    saveAs(fileBlob, `${docTitle}.docx`);
-                } else if (button.id === 'download-txt-btn') {
-                    if (typeof saveAs === 'undefined') throw new Error('Pustaka ekspor TXT belum siap.');
-                    const textContent = editor.innerText;
-                    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-                    saveAs(blob, `${docTitle}.txt`);
-                } else if (button.id === 'download-pdf-btn') {
-                    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') throw new Error('Pustaka ekspor PDF belum siap.');
-                    const { jsPDF } = window.jspdf;
-                    const canvas = await html2canvas(editor, { backgroundColor: '#ffffff' });
-                    const imgData = canvas.toDataURL('image/png');
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    pdf.save(`${docTitle}.pdf`);
-                } else if (button.id === 'download-csv-btn') {
-                     if (typeof saveAs === 'undefined') throw new Error('Pustaka ekspor CSV belum siap.');
-                    let textContent = editor.innerText;
-                    textContent = `"${textContent.replace(/"/g, '""')}"`;
-                    const blob = new Blob([textContent], { type: "text/csv;charset=utf-8" });
-                    saveAs(blob, `${docTitle}.csv`);
-                } else if (button.id === 'copy-btn') {
-                    const textContent = editor.innerText;
-                    navigator.clipboard.writeText(textContent);
-                    button.innerHTML = '<i data-lucide="check" class="w-5 h-5 text-green-500"></i>';
-                    lucide.createIcons();
-                    setTimeout(() => { button.innerHTML = originalIcon; lucide.createIcons(); }, 2000);
-                    return; 
-                }
-            } catch(err) {
-                console.error('Ekspor Gagal:', err);
-                alert(`Ekspor Gagal: ${err.message}`);
-            }
-            button.innerHTML = originalIcon;
-            lucide.createIcons();
-        });
-        
-        const settingsModal = document.getElementById('settings-modal'); 
-        const toggleModal = () => { settingsModal.classList.toggle('hidden'); if (!settingsModal.classList.contains('hidden')) lucide.createIcons(); }; 
-        document.getElementById('settings-btn').addEventListener('click', toggleModal); 
-        document.getElementById('close-modal-btn').addEventListener('click', toggleModal); 
-        document.getElementById('modal-overlay').addEventListener('click', toggleModal); 
-        document.getElementById('theme-switcher').addEventListener('change', (e) => {
-            document.documentElement.setAttribute('data-theme', e.target.value);
-        });
-        document.getElementById('save-settings-btn').addEventListener('click', () => { 
-            userApiKey = document.getElementById('api-key-input').value.trim();
-            // Simpan Model AI
-            currentTextModel = document.getElementById('ai-model-select').value;
-            currentImageModel = document.getElementById('img-model-select').value;
-            
-            alert('Pengaturan dan Model AI disimpan!'); 
-            toggleModal();
-            // Render ulang untuk memperbarui info model di UI
-            if(currentStage === 'initial') renderUI();
-        });
-        
+        // Listener untuk Update Struktur saat Jenis Dokumen Berubah
         jenisDokumenSelect.addEventListener('change', (e) => {
             document.getElementById('custom-type-container').classList.toggle('hidden', e.target.value !== 'Custom');
             updateStructureOptions(e.target.value);
         });
 
+        // Fungsi Penting untuk Mengisi Checkbox Struktur Manual
         function updateStructureOptions(docType) {
             const container = document.getElementById('struktur-checkboxes');
             if (!container) return;
@@ -853,8 +774,10 @@
                 container.appendChild(label);
             });
         }
+        // Panggil sekali saat awal load agar checkbox terisi
         updateStructureOptions(jenisDokumenSelect.value);
 
+        // Listener untuk View Mode (Editor vs Baca)
         viewModeControls.addEventListener('click', (e) => {
             const button = e.target.closest('#view-mode-btn');
             if (!button) return;
@@ -874,18 +797,8 @@
             }
             lucide.createIcons();
         });
-        
-        document.getElementById('sertakan-data').addEventListener('change', e => {
-            document.getElementById('referensi-data-input').classList.toggle('hidden', !e.target.checked);
-        });
-        document.getElementById('sertakan-foto').addEventListener('change', e => {
-            document.getElementById('image-upload-container').classList.toggle('hidden', !e.target.checked);
-            if (!e.target.checked) {
-                storedImages = [];
-                document.getElementById('image-preview-container').innerHTML = '';
-            }
-        });
 
+        // Listener untuk Upload Gambar
         document.getElementById('image-upload-input').addEventListener('change', e => {
             const files = Array.from(e.target.files).slice(0, 10 - storedImages.length);
             const previewContainer = document.getElementById('image-preview-container');
@@ -904,6 +817,7 @@
             });
         });
 
+        // Logika Modal Generate Image
         const imageGenModal = document.getElementById('image-gen-modal');
         const openImageGenBtn = document.getElementById('open-image-gen-modal-btn');
         const closeImageGenBtn = document.getElementById('close-image-gen-modal-btn');
@@ -947,6 +861,7 @@
             toggleImageGenModal();
         });
         
+        // Logika Modal Insert Image
         const insertImageModal = document.getElementById('insert-image-modal');
         const closeInsertImageModalBtn = document.getElementById('close-insert-image-modal-btn');
         const insertImageOverlay = document.getElementById('insert-image-overlay');
@@ -1037,7 +952,11 @@
             }
         }
         
+        // Render UI Awal
         renderUI();
+        
+        // Panggil lagi untuk memastikan dropdown terisi di awal
+        updateStructureOptions(jenisDokumenSelect.value);
     });
     </script>
 </body>
