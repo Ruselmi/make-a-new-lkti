@@ -311,6 +311,28 @@
             gfm: true
         });
 
+        // --- FIX PENTING: LOGIKA SETTINGS DIPINDAH KE ATAS ---
+        const settingsModal = document.getElementById('settings-modal'); 
+        const toggleModal = () => { settingsModal.classList.toggle('hidden'); if (!settingsModal.classList.contains('hidden')) lucide.createIcons(); }; 
+        document.getElementById('settings-btn').addEventListener('click', toggleModal); 
+        document.getElementById('close-modal-btn').addEventListener('click', toggleModal); 
+        document.getElementById('modal-overlay').addEventListener('click', toggleModal); 
+        document.getElementById('theme-switcher').addEventListener('change', (e) => {
+            document.documentElement.setAttribute('data-theme', e.target.value);
+        });
+        document.getElementById('save-settings-btn').addEventListener('click', () => { 
+            userApiKey = document.getElementById('api-key-input').value.trim();
+            // Simpan Model AI
+            currentTextModel = document.getElementById('ai-model-select').value;
+            currentImageModel = document.getElementById('img-model-select').value;
+            
+            alert('Pengaturan dan Model AI disimpan!'); 
+            toggleModal();
+            // Render ulang untuk memperbarui info model di UI
+            if(currentStage === 'initial') renderUI();
+        });
+        // ----------------------------------------------------
+
         const apiKey = "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
         // ----------------------------------------------------
         // KONFIGURASI AI (REAL, BUKAN SIMULASI)
