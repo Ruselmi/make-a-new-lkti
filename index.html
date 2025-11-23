@@ -65,7 +65,7 @@
         #full-text-editor.prose ol { @apply list-decimal list-outside ml-5; }
         #full-text-editor.prose a { @apply text-primary hover:underline; }
         #full-text-editor:focus { @apply outline-none ring-2 ring-primary; }
-        #full-text-editor img { @apply max-w-full h-auto rounded-md my-4 mx-auto shadow-lg; }
+        #full-text-editor img { @apply max-w-full h-auto rounded-md my-4 mx-auto shadow-lg bg-gray-200; }
         
         /* KaTeX Corrections */
         .katex { font-size: 1.1em; }
@@ -1017,14 +1017,29 @@
             
             try {
                 resultsContainer.innerHTML = '';
+                // Menggunakan layanan gambar gratis yang lebih stabil (Pollinations AI / LoremFlickr)
+                // source.unsplash.com sudah tidak aktif
                 for(let i=0; i<12; i++){
                     const imgEl = document.createElement('img');
-                    imgEl.src = `https://source.unsplash.com/random/300x200/?${query}&sig=${Math.random()}`;
-                    imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary';
+                    // Gunakan Pollinations untuk hasil yang lebih relevan dengan query, atau LoremFlickr sebagai cadangan
+                    const seed = Math.floor(Math.random() * 1000);
+                    imgEl.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(query)}?width=300&height=200&seed=${seed}&nologo=true`;
+                    
+                    imgEl.className = 'w-full h-24 object-cover rounded-md cursor-pointer hover:ring-2 ring-primary bg-gray-200';
+                    imgEl.alt = query;
+                    
+                    // Fallback jika gambar gagal dimuat
+                    imgEl.onerror = function() {
+                        this.src = `https://placehold.co/300x200?text=${encodeURIComponent(query)}`;
+                        this.onerror = null; // prevent infinite loop
+                    };
+
                     imgEl.onclick = () => {
                         const editor = document.getElementById('full-text-editor');
                         editor.focus();
-                        document.execCommand('insertHTML', false, `<img src="${imgEl.src}" alt="${query}" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" />`);
+                        // Insert image with error handling in the editor too
+                        const content = `<img src="${imgEl.src}" alt="${query}" style="max-width: 80%; height: auto; margin: 1rem auto; display: block; border-radius: 0.5rem;" onerror="this.style.display='none'"/>`;
+                        document.execCommand('insertHTML', false, content);
                         insertImageModal.classList.add('hidden');
                     };
                     resultsContainer.appendChild(imgEl);
