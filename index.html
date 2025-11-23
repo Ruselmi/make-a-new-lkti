@@ -109,6 +109,7 @@
             <header class="flex items-center justify-between">
                 <div class="flex items-center space-x-3"><i data-lucide="brain-circuit" class="w-8 h-8 text-primary"></i><div><h1 class="text-xl font-bold text-text-primary">AI LKTI Pro</h1><p class="text-sm text-text-secondary">Asisten Penulis Akademik</p></div></div>
                 <div class="flex items-center space-x-2">
+                    <button id="chat-toggle-btn" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Chat Assistant"><i data-lucide="message-circle" class="w-5 h-5 text-primary"></i></button>
                     <button id="settings-btn" class="p-2 rounded-full hover:bg-border-color/50 transition-colors" title="Pengaturan"><i data-lucide="settings-2" class="w-5 h-5 text-text-secondary"></i></button>
                 </div>
             </header>
@@ -300,6 +301,19 @@
             <div id="online-image-results" class="grid grid-cols-3 sm:grid-cols-4 gap-4 max-h-[40vh] overflow-y-auto"></div>
         </div>
     </div>
+
+    <!-- MODAL CHAT ASSISTANT -->
+    <div id="chat-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300"><div id="chat-modal-overlay" class="absolute inset-0 bg-black/60"></div><div class="relative w-full max-w-md h-[80vh] flex flex-col p-4 m-4 rounded-xl shadow-xl bg-surface animate-scale-in ring-1 ring-border-color/20"><div class="flex items-center justify-between pb-4 border-b border-border-color"><h3 class="text-lg font-semibold text-text-primary flex items-center gap-2"><i data-lucide="message-circle" class="w-5 h-5 text-primary"></i>Asisten Chat</h3><button id="close-chat-modal-btn" class="p-1 rounded-full hover:bg-border-color/50"><i data-lucide="x" class="w-5 h-5 text-text-secondary"></i></button></div>
+        <div id="chat-messages" class="flex-grow overflow-y-auto py-4 space-y-3 pr-2 text-sm">
+            <div class="p-3 rounded-lg bg-background text-text-secondary max-w-[85%]">Halo! Saya asisten AI Anda. Ada yang bisa saya bantu terkait dokumen ini?</div>
+        </div>
+        <div class="pt-4 border-t border-border-color">
+            <form id="chat-form" class="flex gap-2">
+                <input type="text" id="chat-input" class="flex-grow p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none" placeholder="Tanya sesuatu...">
+                <button type="submit" class="btn px-3 bg-primary text-white rounded-md"><i data-lucide="send" class="w-4 h-4"></i></button>
+            </form>
+        </div>
+    </div></div>
     
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -311,7 +325,10 @@
             gfm: true
         });
 
-        // --- FIX PENTING: LOGIKA SETTINGS DIPINDAH KE ATAS ---
+        // API Key Default
+        const apiKey = "AIzaSyBETRhBFxKIcZS7-o0RYAOOlEf6VSBBol8";
+
+        // --- LOGIKA SETTINGS (DIPINDAH KE ATAS) ---
         const settingsModal = document.getElementById('settings-modal'); 
         const toggleModal = () => { settingsModal.classList.toggle('hidden'); if (!settingsModal.classList.contains('hidden')) lucide.createIcons(); }; 
         document.getElementById('settings-btn').addEventListener('click', toggleModal); 
@@ -331,9 +348,58 @@
             // Render ulang untuk memperbarui info model di UI
             if(currentStage === 'initial') renderUI();
         });
+        
+        // --- LOGIKA CHAT ASSISTANT ---
+        const chatModal = document.getElementById('chat-modal');
+        const toggleChatModal = () => {
+            chatModal.classList.toggle('hidden');
+            if (!chatModal.classList.contains('hidden')) {
+                document.getElementById('chat-input').focus();
+                lucide.createIcons();
+            }
+        };
+        document.getElementById('chat-toggle-btn').addEventListener('click', toggleChatModal);
+        document.getElementById('close-chat-modal-btn').addEventListener('click', toggleChatModal);
+        document.getElementById('chat-modal-overlay').addEventListener('click', toggleChatModal);
+
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Tampilkan pesan user
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML += `<div class="p-3 rounded-lg bg-primary/10 text-text-primary max-w-[85%] ml-auto text-right">${message}</div>`;
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Ambil konteks editor
+            const editor = document.getElementById('full-text-editor');
+            const currentText = editor ? editor.innerText : "";
+            
+            const prompt = `Konteks Dokumen Saat Ini:\n"${currentText.substring(0, 3000)}..."\n\nPertanyaan User: ${message}\n\nJawab dengan ringkas dan membantu dalam Bahasa Indonesia.`;
+
+            // Tampilkan loading
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = "p-3 rounded-lg bg-background text-text-secondary max-w-[85%] flex items-center gap-2";
+            loadingDiv.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengetik...`;
+            messagesContainer.appendChild(loadingDiv);
+            lucide.createIcons();
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                const { text } = await callTextAPI(prompt);
+                messagesContainer.removeChild(loadingDiv);
+                messagesContainer.innerHTML += `<div class="p-3 rounded-lg bg-background text-text-primary max-w-[85%] prose prose-sm dark:prose-invert">${marked.parse(text)}</div>`;
+            } catch (err) {
+                messagesContainer.removeChild(loadingDiv);
+                messagesContainer.innerHTML += `<div class="p-3 rounded-lg bg-red-500/10 text-red-500 max-w-[85%]">Gagal memproses: ${err.message}</div>`;
+            }
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
         // ----------------------------------------------------
 
-        const apiKey = "AIzaSyAxqmKL3WpEkGNJBb5BOo0QNBf8BVgL9vk";
         // ----------------------------------------------------
         // KONFIGURASI AI (REAL, BUKAN SIMULASI)
         // ----------------------------------------------------
@@ -371,6 +437,11 @@
         async function callTextAPI(prompt, images = [], useSearch = false) {
             const apiKeyToUse = userApiKey || apiKey; 
             
+            if (!apiKeyToUse) {
+                alert("API Key belum diatur. Silakan buka Pengaturan (ikon gerigi) dan masukkan Google Gemini API Key Anda.");
+                throw new Error("API Key missing");
+            }
+
             // MENGGUNAKAN MODEL YANG DIPILIH SECARA DINAMIS
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${currentTextModel}:generateContent?key=${apiKeyToUse}`;
             
@@ -409,6 +480,11 @@
         async function callImageAPI(prompt) {
             const apiKeyToUse = userApiKey || apiKey;
             
+            if (!apiKeyToUse) {
+                alert("API Key belum diatur. Silakan buka Pengaturan (ikon gerigi) dan masukkan Google Gemini API Key Anda.");
+                throw new Error("API Key missing");
+            }
+
              // MENGGUNAKAN MODEL YANG DIPILIH SECARA DINAMIS
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${currentImageModel}:predict?key=${apiKeyToUse}`;
             
@@ -992,6 +1068,45 @@
             }
         }
 
+        // --- FUNGSI BARU: KONVERSI LATEX KE GAMBAR UNTUK WORD ---
+        function convertLatexToImages(contentHTML) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(contentHTML, 'text/html');
+
+            // 1. Handle KaTeX yang sudah dirender (cari elemen .katex)
+            const katexElements = doc.querySelectorAll('.katex');
+            katexElements.forEach(el => {
+                // KaTeX menyimpan source TeX di dalam tag annotation
+                const annotation = el.querySelector('annotation');
+                if (annotation) {
+                    const latex = annotation.textContent;
+                    const img = doc.createElement('img');
+                    // Gunakan API CodeCogs untuk generate gambar rumus
+                    img.src = `https://latex.codecogs.com/png.image?\\dpi{300} ${encodeURIComponent(latex)}`;
+                    img.style.verticalAlign = 'middle';
+                    // Ganti elemen katex dengan gambar
+                    // Kita perlu mengganti parent dari .katex jika itu adalah span pembungkus
+                    // Tapi replaceWith pada el sudah cukup aman
+                    el.replaceWith(img);
+                }
+            });
+
+            // 2. Handle teks mentah $$...$$ (jika belum dirender)
+            // Ini sedikit berisiko dengan regex di HTML string, tapi efektif untuk kasus ini
+            let html = doc.body.innerHTML;
+            
+            // Ganti Block Math $$...$$
+            html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
+                return `<div style="text-align:center; margin: 10px 0;"><img src="https://latex.codecogs.com/png.image?\\dpi{300} ${encodeURIComponent(tex)}" /></div>`;
+            });
+            
+            // Ganti Inline Math $...$ (Hati-hati, bisa false positive, tapi kita coba yang spesifik)
+            // Biasanya markdown pakai $...$ atau \\(...\\)
+            // Kita skip inline $ single dulu untuk keamanan kecuali yakin formatnya
+            
+            return html;
+        }
+
         // LOGIKA DOWNLOAD YANG SUDAH DIPERBAIKI
         finalActions.addEventListener('click', async (e) => {
             const button = e.target.closest('button');
@@ -1013,8 +1128,11 @@
                     if (typeof htmlDocx === 'undefined' && window.htmlDocx) htmlDocx = window.htmlDocx;
                     if (typeof htmlDocx === 'undefined') throw new Error('Pustaka DOCX gagal dimuat. Coba refresh halaman.');
                     
-                    // Bungkus HTML agar format lebih rapi di Word
-                    const content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } h1, h2 { color: black; } img { max-width: 100%; height: auto; }</style></head><body>${editor.innerHTML}</body></html>`;
+                    // 1. PROSES RUMUS MATEMATIKA MENJADI GAMBAR
+                    const processedHTML = convertLatexToImages(editor.innerHTML);
+
+                    // 2. Bungkus HTML agar format lebih rapi di Word
+                    const content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } h1, h2 { color: black; } img { max-width: 100%; height: auto; }</style></head><body>${processedHTML}</body></html>`;
                     
                     const fileBlob = htmlDocx.asBlob(content);
                     forceDownload(fileBlob, `${docTitle}.docx`);
