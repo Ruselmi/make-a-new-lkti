@@ -266,7 +266,20 @@
     <div id="settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300"><div id="modal-overlay" class="absolute inset-0 bg-black/60"></div><div class="relative w-full max-w-md p-6 m-4 rounded-xl shadow-xl bg-surface animate-scale-in ring-1 ring-border-color/20"><div class="flex items-center justify-between pb-4 border-b border-border-color"><h3 class="text-lg font-semibold text-text-primary flex items-center gap-2"><i data-lucide="settings-2" class="w-5 h-5"></i>Pengaturan</h3><button id="close-modal-btn" class="p-1 rounded-full hover:bg-border-color/50"><i data-lucide="x" class="w-5 h-5 text-text-secondary"></i></button></div><div class="py-6 space-y-4">
         <div><label for="theme-switcher" class="block text-sm font-medium text-text-secondary mb-2">Tema Tampilan</label><select id="theme-switcher" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none"><option value="day">Day</option><option value="night" selected>Night</option><option value="planet">Planet</option><option value="ai">AI</option></select></div>
         
-        <!-- PENGATURAN MODEL AI (BARU) -->
+        <!-- PENGATURAN FORMAT SIMBOL & RUMUS (BARU) -->
+        <div>
+            <label for="symbol-format-select" class="block text-sm font-medium text-text-secondary mb-2">Format Simbol & Rumus</label>
+            <select id="symbol-format-select" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none">
+                <option value="latex" selected>LaTeX (Standar Akademik - Auto Convert ke Word)</option>
+                <option value="unicode">Unicode (Simbol Teks Biasa - α, β, x²)</option>
+                <option value="narasi">Narasi/Kalimat (Penjelasan Verbal)</option>
+                <option value="ascii">ASCII Math (Notasi Komputer - a^2 + b^2)</option>
+                <option value="mathml">MathML (Kode Web Standar - Eksperimental)</option>
+            </select>
+            <p class="text-xs text-text-secondary mt-1">Pilih 'LaTeX' jika Anda ingin rumus diubah otomatis menjadi Equation di Word.</p>
+        </div>
+
+        <!-- PENGATURAN MODEL AI -->
         <div>
             <label for="ai-model-select" class="block text-sm font-medium text-text-secondary mb-2">Model AI Teks (Generasi Dokumen)</label>
             <select id="ai-model-select" class="w-full p-2 rounded-md bg-input-bg border border-border-color focus:ring-2 focus:ring-primary focus:outline-none">
@@ -328,6 +341,9 @@
 
         // API Key Default
         const apiKey = "AIzaSyBETRhBFxKIcZS7-o0RYAOOlEf6VSBBol8";
+        
+        // DEFAULT SYMBOL FORMAT
+        let currentSymbolFormat = "latex";
 
         // --- LOGIKA SETTINGS (DIPINDAH KE ATAS) ---
         const settingsModal = document.getElementById('settings-modal'); 
@@ -340,11 +356,12 @@
         });
         document.getElementById('save-settings-btn').addEventListener('click', () => { 
             userApiKey = document.getElementById('api-key-input').value.trim();
-            // Simpan Model AI
+            // Simpan Model & Format
             currentTextModel = document.getElementById('ai-model-select').value;
             currentImageModel = document.getElementById('img-model-select').value;
+            currentSymbolFormat = document.getElementById('symbol-format-select').value;
             
-            alert('Pengaturan dan Model AI disimpan!'); 
+            alert(`Pengaturan disimpan!\nFormat Rumus: ${currentSymbolFormat}`); 
             toggleModal();
             // Render ulang untuk memperbarui info model di UI
             if(currentStage === 'initial') renderUI();
@@ -705,15 +722,28 @@
             context += `TUGAS: Susun dokumen bertipe '${inputs.docType}' dengan topik spesifik: "${inputs.topic}".\n`;
             context += `GAYA PENULISAN: Formal, objektif, analitis, dan mengikuti kaidah PUEBI. Gunakan gaya sitasi ${inputs.citationStyle}.\n`;
             
-            // PANDUAN NOTASI ILMIAH & RUMUS (MATEMATIKA, SAINS, EKONOMI)
-            context += `\nPENTING UNTUK PENULISAN RUMUS (MATEMATIKA, FISIKA, KIMIA, BIOLOGI, EKONOMI):
-            1. Gunakan format LaTeX ($$...$$) untuk semua persamaan dan rumus.
-            2. TEKS DALAM RUMUS: Jika variabel berupa kata (bukan simbol satu huruf), WAJIB dibungkus dengan \\textit{...} agar terbaca jelas dan miring (italic), atau \\text{...} jika ingin tegak.
-               - Contoh Fisika: $$ \\textit{Kecepatan Rata-rata} = \\frac{\\Delta \\textit{Jarak}}{\\Delta \\textit{Waktu}} $$
-               - Contoh Ekonomi: $$ \\textit{Profit} = \\textit{Total Pendapatan} - \\textit{Total Biaya} $$
-               - Contoh Kimia: Gunakan subscript yang benar, misal $$ H_2O + CO_2 \\rightarrow H_2CO_3 $$
-            3. Gunakan simbol Yunani/Latin standar (misal: \\alpha, \\beta, \\Delta, \\Sigma, \\mu, \\pi) sesuai konteks ilmunya.
-            4. Jangan biarkan huruf teks menempel satu sama lain tanpa spasi atau format yang benar. \n`;
+            // INSTRUKSI KHUSUS BERDASARKAN FORMAT SIMBOL
+            context += `\nPENTING: Format Penulisan Simbol & Rumus Matematika:\n`;
+            
+            if (currentSymbolFormat === 'latex') {
+                context += `1. Gunakan format LaTeX ($$...$$) untuk semua persamaan dan rumus.
+                2. TEKS DALAM RUMUS: Jika variabel berupa kata (bukan simbol satu huruf), WAJIB dibungkus dengan \\textit{...} agar terbaca jelas dan miring (italic), atau \\text{...} jika ingin tegak.
+                   - Contoh Fisika: $$ \\textit{Kecepatan Rata-rata} = \\frac{\\Delta \\textit{Jarak}}{\\Delta \\textit{Waktu}} $$
+                3. Gunakan simbol Yunani/Latin standar (misal: \\alpha, \\beta, \\Delta, \\Sigma, \\mu, \\pi).\n`;
+            } else if (currentSymbolFormat === 'unicode') {
+                context += `1. GUNAKAN SIMBOL UNICODE STANDAR (Teks Biasa) sebisa mungkin. Hindari LaTeX yang rumit.
+                2. Contoh: Gunakan 'α', 'β', 'Δ', 'Σ', '√', '±', 'x²', 'H₂O'.
+                3. Untuk pecahan atau rumus kompleks, tulis dalam satu baris menggunakan tanda kurung. Contoh: (a + b) / (c - d).\n`;
+            } else if (currentSymbolFormat === 'narasi') {
+                context += `1. JANGAN GUNAKAN RUMUS MATEMATIKA KOMPLEKS.
+                2. Jelaskan setiap rumus dalam bentuk kalimat naratif yang mudah dipahami orang awam.
+                3. Contoh: "Energi kinetik benda tersebut sebanding dengan setengah dari massa dikalikan kuadrat kecepatannya."\n`;
+            } else if (currentSymbolFormat === 'ascii') {
+                context += `1. Gunakan notasi ASCII Math (mirip penulisan kode program).
+                2. Contoh: x^2 + y^2 = r^2, sum_(i=1)^n i = (n(n+1))/2.\n`;
+            } else if (currentSymbolFormat === 'mathml') {
+                 context += `1. Tuliskan rumus langsung dalam kode MathML (<math>...</math>). Pastikan strukturnya valid.\n`;
+            }
 
             // CUSTOM REFS LOGIC
             if (inputs.customRefs) {
@@ -1109,6 +1139,8 @@
             // Ganti Block Math $$...$$ dengan MathML
             html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
                 try {
+                    // Hapus prefix yang mungkin ada
+                    tex = tex.replace(/\\\[|\\\]/g, ''); 
                     return katex.renderToString(tex, {
                         output: 'mathml',
                         throwOnError: false,
@@ -1120,8 +1152,6 @@
             });
             
             // Ganti Inline Math $...$ dengan MathML
-            // Note: Regex ini sederhana dan mungkin perlu penyesuaian jika ada $ di teks biasa
-            // Kita asumsikan $ digunakan untuk math di sini.
              html = html.replace(/([^\\]|^)\$([^$]+)\$/g, (match, prefix, tex) => {
                 try {
                      // Cek jika tex mengandung spasi dan bukan rumus pendek, mungkin bukan math
@@ -1161,43 +1191,26 @@
                     if (typeof htmlDocx === 'undefined' && window.htmlDocx) htmlDocx = window.htmlDocx;
                     if (typeof htmlDocx === 'undefined') throw new Error('Pustaka DOCX gagal dimuat. Coba refresh halaman.');
                     
-                    // 1. PROSES RUMUS MATEMATIKA MENJADI MATHML (TEKS BENERAN)
-                    // Kita ambil innerHTML dari editor, tapi kita perlu memastikan simbol $$ masih ada atau sudah dirender
-                    // Jika sudah dirender oleh auto-render, kita perlu mengambil anotasi TeX-nya atau menggunakan MathML yang ada.
-                    // Editor saat ini menampilkan HTML hasil render KaTeX. 
-                    // KaTeX secara default merender HTML+MathML.
-                    // Word mungkin bingung dengan HTML span kompleks KaTeX.
-                    // Lebih baik kita ambil source Markdown asli jika memungkinkan, TAPI di sini kita hanya punya HTML editor.
-                    // Strategi: Kita akan mencoba membersihkan HTML KaTeX yang kompleks menjadi MathML murni atau membiarkan html-docx menanganinya.
-                    // TAPI, html-docx-js tidak support MathML tag <math>.
-                    // JADI, solusi terbaik untuk "Huruf Beneran" di Word tanpa MathML support di library JS adalah:
-                    // Membiarkan KaTeX merender ke HTML (span dengan font), dan berharap Word merendernya sebagai teks biasa.
-                    // Masalahnya posisi (layout) pecahan/akar akan hancur.
+                    // 1. PROSES RUMUS MATEMATIKA MENJADI MATHML (TEKS BENERAN) - HANYA JIKA MODE LATEX
+                    let processedHTML = editor.innerHTML;
                     
-                    // ALTERNATIF TERAKHIR "HURUF BENERAN": 
-                    // Karena keterbatasan browser-side JS library untuk Word Equation asli,
-                    // kita akan menggunakan Output HTML KaTeX tapi kita *strip* styling yang bikin berantakan,
-                    // atau kita fallback ke Teks Unicode jika memungkinkan.
-                    // Namun, karena user minta "huruf beneran tapi dimiringkan", kita akan coba pendekatan HTML Spans yang sudah ada di editor.
-                    // Editor sudah menampilkan hasil render. Kita kirim itu ke Word.
-                    // Kita tambahkan CSS khusus agar Word mengerti font-nya.
-                    
-                    const processedHTML = editor.innerHTML; // Ambil apa adanya (sudah dirender HTML/CSS)
+                    if(currentSymbolFormat === 'latex') {
+                       processedHTML = convertLatexToMathML(processedHTML);
+                    }
 
                     // 2. Bungkus HTML agar format lebih rapi di Word
-                    // Penting: Sertakan CSS KaTeX agar tampilannya tidak hancur di Word (walaupun tidak sempurna 100%)
+                    // Penting: Sertakan XML Namespaces (xmlns:m) agar Word mengenali tag <math> sebagai Equation
                     const content = `
-                        <!DOCTYPE html>
-                        <html>
+                        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns:m='http://schemas.openxmlformats.org/officeDocument/2006/math' xmlns='http://www.w3.org/TR/REC-html40'>
                         <head>
                             <meta charset="UTF-8">
+                            <title>Export</title>
                             <style>
                                 body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } 
-                                h1, h2 { color: black; } 
+                                h1, h2, h3, h4, h5, h6 { color: black; font-family: 'Times New Roman', serif; } 
                                 img { max-width: 100%; height: auto; }
-                                /* Coba pertahankan style dasar KaTeX */
-                                .katex { font-size: 1em; font-family: 'Times New Roman', serif; }
-                                .katex .mathnormal { font-style: italic; }
+                                table { border-collapse: collapse; width: 100%; }
+                                td, th { border: 1px solid #000; padding: 8px; }
                             </style>
                         </head>
                         <body>
@@ -1205,7 +1218,10 @@
                         </body>
                         </html>`;
                     
-                    const fileBlob = htmlDocx.asBlob(content);
+                    const fileBlob = htmlDocx.asBlob(content, {
+                        orientation: 'portrait',
+                        margins: { top: 1440, right: 1440, bottom: 1440, left: 1440 } // ~2.54 cm margin
+                    });
                     forceDownload(fileBlob, `${docTitle}.docx`);
                     
                 } else if (button.id === 'download-txt-btn') {
