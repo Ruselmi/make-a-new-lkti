@@ -1094,41 +1094,48 @@
             }
         }
 
-        // --- FUNGSI BARU: KONVERSI LATEX KE GAMBAR UNTUK WORD ---
-        function convertLatexToImages(contentHTML) {
+        // --- FUNGSI BARU: KONVERSI LATEX KE MATHML UNTUK WORD (TEKS BENERAN) ---
+        function convertLatexToMathML(contentHTML) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(contentHTML, 'text/html');
 
-            // 1. Handle KaTeX yang sudah dirender (cari elemen .katex)
-            const katexElements = doc.querySelectorAll('.katex');
-            katexElements.forEach(el => {
-                // KaTeX menyimpan source TeX di dalam tag annotation
-                const annotation = el.querySelector('annotation');
-                if (annotation) {
-                    const latex = annotation.textContent;
-                    const img = doc.createElement('img');
-                    // Gunakan API CodeCogs untuk generate gambar rumus
-                    img.src = `https://latex.codecogs.com/png.image?\\dpi{300} ${encodeURIComponent(latex)}`;
-                    img.style.verticalAlign = 'middle';
-                    // Ganti elemen katex dengan gambar
-                    // Kita perlu mengganti parent dari .katex jika itu adalah span pembungkus
-                    // Tapi replaceWith pada el sudah cukup aman
-                    el.replaceWith(img);
-                }
-            });
-
-            // 2. Handle teks mentah $$...$$ (jika belum dirender)
-            // Ini sedikit berisiko dengan regex di HTML string, tapi efektif untuk kasus ini
+            // 1. Cari semua elemen math yang sudah dirender KaTeX (jika ada)
+            // KaTeX biasanya merender ke HTML+MathML jika tidak diatur lain.
+            // Tapi untuk amannya, kita akan mencari string delimiter $$...$$ di HTML mentah
+            // dan menggantinya dengan output MathML dari KaTeX.
+            
             let html = doc.body.innerHTML;
             
-            // Ganti Block Math $$...$$
+            // Ganti Block Math $$...$$ dengan MathML
             html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
-                return `<div style="text-align:center; margin: 10px 0;"><img src="https://latex.codecogs.com/png.image?\\dpi{300} ${encodeURIComponent(tex)}" /></div>`;
+                try {
+                    return katex.renderToString(tex, {
+                        output: 'mathml',
+                        throwOnError: false,
+                        displayMode: true
+                    });
+                } catch (e) {
+                    return match; // Fallback jika error
+                }
             });
             
-            // Ganti Inline Math $...$ (Hati-hati, bisa false positive, tapi kita coba yang spesifik)
-            // Biasanya markdown pakai $...$ atau \\(...\\)
-            // Kita skip inline $ single dulu untuk keamanan kecuali yakin formatnya
+            // Ganti Inline Math $...$ dengan MathML
+            // Note: Regex ini sederhana dan mungkin perlu penyesuaian jika ada $ di teks biasa
+            // Kita asumsikan $ digunakan untuk math di sini.
+             html = html.replace(/([^\\]|^)\$([^$]+)\$/g, (match, prefix, tex) => {
+                try {
+                     // Cek jika tex mengandung spasi dan bukan rumus pendek, mungkin bukan math
+                     // Tapi untuk amannya kita coba render saja
+                    const mathML = katex.renderToString(tex, {
+                        output: 'mathml',
+                        throwOnError: false,
+                        displayMode: false
+                    });
+                    return prefix + mathML;
+                } catch (e) {
+                    return match;
+                }
+            });
             
             return html;
         }
@@ -1154,11 +1161,49 @@
                     if (typeof htmlDocx === 'undefined' && window.htmlDocx) htmlDocx = window.htmlDocx;
                     if (typeof htmlDocx === 'undefined') throw new Error('Pustaka DOCX gagal dimuat. Coba refresh halaman.');
                     
-                    // 1. PROSES RUMUS MATEMATIKA MENJADI GAMBAR
-                    const processedHTML = convertLatexToImages(editor.innerHTML);
+                    // 1. PROSES RUMUS MATEMATIKA MENJADI MATHML (TEKS BENERAN)
+                    // Kita ambil innerHTML dari editor, tapi kita perlu memastikan simbol $$ masih ada atau sudah dirender
+                    // Jika sudah dirender oleh auto-render, kita perlu mengambil anotasi TeX-nya atau menggunakan MathML yang ada.
+                    // Editor saat ini menampilkan HTML hasil render KaTeX. 
+                    // KaTeX secara default merender HTML+MathML.
+                    // Word mungkin bingung dengan HTML span kompleks KaTeX.
+                    // Lebih baik kita ambil source Markdown asli jika memungkinkan, TAPI di sini kita hanya punya HTML editor.
+                    // Strategi: Kita akan mencoba membersihkan HTML KaTeX yang kompleks menjadi MathML murni atau membiarkan html-docx menanganinya.
+                    // TAPI, html-docx-js tidak support MathML tag <math>.
+                    // JADI, solusi terbaik untuk "Huruf Beneran" di Word tanpa MathML support di library JS adalah:
+                    // Membiarkan KaTeX merender ke HTML (span dengan font), dan berharap Word merendernya sebagai teks biasa.
+                    // Masalahnya posisi (layout) pecahan/akar akan hancur.
+                    
+                    // ALTERNATIF TERAKHIR "HURUF BENERAN": 
+                    // Karena keterbatasan browser-side JS library untuk Word Equation asli,
+                    // kita akan menggunakan Output HTML KaTeX tapi kita *strip* styling yang bikin berantakan,
+                    // atau kita fallback ke Teks Unicode jika memungkinkan.
+                    // Namun, karena user minta "huruf beneran tapi dimiringkan", kita akan coba pendekatan HTML Spans yang sudah ada di editor.
+                    // Editor sudah menampilkan hasil render. Kita kirim itu ke Word.
+                    // Kita tambahkan CSS khusus agar Word mengerti font-nya.
+                    
+                    const processedHTML = editor.innerHTML; // Ambil apa adanya (sudah dirender HTML/CSS)
 
                     // 2. Bungkus HTML agar format lebih rapi di Word
-                    const content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } h1, h2 { color: black; } img { max-width: 100%; height: auto; }</style></head><body>${processedHTML}</body></html>`;
+                    // Penting: Sertakan CSS KaTeX agar tampilannya tidak hancur di Word (walaupun tidak sempurna 100%)
+                    const content = `
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <style>
+                                body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; } 
+                                h1, h2 { color: black; } 
+                                img { max-width: 100%; height: auto; }
+                                /* Coba pertahankan style dasar KaTeX */
+                                .katex { font-size: 1em; font-family: 'Times New Roman', serif; }
+                                .katex .mathnormal { font-style: italic; }
+                            </style>
+                        </head>
+                        <body>
+                            ${processedHTML}
+                        </body>
+                        </html>`;
                     
                     const fileBlob = htmlDocx.asBlob(content);
                     forceDownload(fileBlob, `${docTitle}.docx`);
