@@ -65,10 +65,11 @@
         #full-text-editor.prose ol { @apply list-decimal list-outside ml-5; }
         #full-text-editor.prose a { @apply text-primary hover:underline; }
         #full-text-editor:focus { @apply outline-none ring-2 ring-primary; }
-        #full-text-editor img { @apply max-w-full h-auto rounded-md my-4 mx-auto shadow-lg bg-gray-200; }
+        #full-text-editor img { @apply max-w-full h-auto rounded-md my-4 mx-auto shadow-lg; }
         
         /* KaTeX Corrections */
-        .katex { font-size: 1.1em; }
+        .katex { font-size: 1.1em; font-family: 'Times New Roman', serif !important; }
+        .katex .mathnormal { font-family: 'Times New Roman', serif !important; font-style: italic; }
         
         .editor-toolbar { position: sticky; top: 1rem; z-index: 10; }
         
@@ -704,6 +705,16 @@
             context += `TUGAS: Susun dokumen bertipe '${inputs.docType}' dengan topik spesifik: "${inputs.topic}".\n`;
             context += `GAYA PENULISAN: Formal, objektif, analitis, dan mengikuti kaidah PUEBI. Gunakan gaya sitasi ${inputs.citationStyle}.\n`;
             
+            // PANDUAN NOTASI ILMIAH & RUMUS (MATEMATIKA, SAINS, EKONOMI)
+            context += `\nPENTING UNTUK PENULISAN RUMUS (MATEMATIKA, FISIKA, KIMIA, BIOLOGI, EKONOMI):
+            1. Gunakan format LaTeX ($$...$$) untuk semua persamaan dan rumus.
+            2. TEKS DALAM RUMUS: Jika variabel berupa kata (bukan simbol satu huruf), WAJIB dibungkus dengan \\textit{...} agar terbaca jelas dan miring (italic), atau \\text{...} jika ingin tegak.
+               - Contoh Fisika: $$ \\textit{Kecepatan Rata-rata} = \\frac{\\Delta \\textit{Jarak}}{\\Delta \\textit{Waktu}} $$
+               - Contoh Ekonomi: $$ \\textit{Profit} = \\textit{Total Pendapatan} - \\textit{Total Biaya} $$
+               - Contoh Kimia: Gunakan subscript yang benar, misal $$ H_2O + CO_2 \\rightarrow H_2CO_3 $$
+            3. Gunakan simbol Yunani/Latin standar (misal: \\alpha, \\beta, \\Delta, \\Sigma, \\mu, \\pi) sesuai konteks ilmunya.
+            4. Jangan biarkan huruf teks menempel satu sama lain tanpa spasi atau format yang benar. \n`;
+
             // CUSTOM REFS LOGIC
             if (inputs.customRefs) {
                 context += `\nREFERENSI WAJIB (PRIORITAS TERTINGGI):
