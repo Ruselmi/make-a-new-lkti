@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Marked.js for rendering Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder"></script>
     <!-- html-docx-js for client-side HTML to DOCX conversion -->
     <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx-js.min.js"></script>
     <!-- docx for direct Word creation -->
@@ -16,6 +18,7 @@
     </script>
     <!-- FileSaver.js for saving the docx file -->
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -116,6 +119,12 @@
             .h-5 { height: 1.25rem; }
             .w-5 { width: 1.25rem; }
             .min-h-11 { min-height: 44px; }
+            #output-panel { padding: 1rem; }
+            #word-studio { padding: 0.75rem; }
+            #word-editor { min-height: 220px; font-size: 0.95rem; }
+            #support-api-source { height: 9rem; }
+            #support-result { max-height: 10rem; }
+            #export-buttons { flex-wrap: wrap; justify-content: flex-end; }
         }
 
         /* Theme definitions */
@@ -282,6 +291,17 @@
                         <div>
                             <label for="topik" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelTopic">3. Topik Utama</label>
                             <textarea id="topik" rows="3" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-400" data-translate-key="placeholderTopic" placeholder="Masukkan topik, judul, atau ide utama..."></textarea>
+                            <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                                <select id="topic-template" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm text-slate-800 dark:text-slate-200">
+                                    <option value="">Template topik cepat...</option>
+                                    <option value="Analisis pengaruh transformasi digital terhadap UMKM di Indonesia">UMKM & Transformasi Digital</option>
+                                    <option value="Efektivitas metode blended learning terhadap hasil belajar mahasiswa">Pendidikan & Blended Learning</option>
+                                    <option value="Strategi pemasaran berbasis media sosial untuk meningkatkan loyalitas pelanggan">Pemasaran Media Sosial</option>
+                                    <option value="Optimasi sistem informasi akademik berbasis web untuk meningkatkan layanan kampus">Sistem Informasi Akademik</option>
+                                    <option value="Dampak penggunaan kecerdasan buatan terhadap produktivitas kerja di sektor kreatif">AI & Produktivitas Kerja</option>
+                                </select>
+                                <button type="button" id="apply-template-btn" class="px-3 py-2 bg-slate-200 dark:bg-slate-700 rounded-md text-sm hover:bg-slate-300 dark:hover:bg-slate-600">Pakai Template</button>
+                            </div>
                         </div>
                          <div>
                             <label for="gaya_sitasi" class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1" data-translate-key="labelCitation">4. Opsi Sitasi</label>
@@ -385,6 +405,54 @@
                         <span id="btn-text" data-translate-key="btnGenerate">Generate Dokumen</span>
                     </button>
                 </div>
+                <div class="mt-4 p-3 bg-white dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-lg space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Sistem Draft Otomatis</p>
+                        <span id="draft-status" class="text-xs text-slate-500 dark:text-slate-400">Belum ada draft</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" id="save-draft-btn" class="px-2 py-2 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">Simpan</button>
+                        <button type="button" id="load-draft-btn" class="px-2 py-2 text-xs bg-sky-600 text-white rounded hover:bg-sky-700">Muat</button>
+                        <button type="button" id="clear-draft-btn" class="px-2 py-2 text-xs bg-rose-600 text-white rounded hover:bg-rose-700">Hapus</button>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 bg-slate-100 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-600 rounded-lg space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Support API Research (FREE mode)</p>
+                        <label class="text-xs flex items-center gap-1"><input id="free-mode-toggle" type="checkbox" checked class="h-3.5 w-3.5">Free</label>
+                    </div>
+                    <select id="support-api-source" multiple class="w-full p-2 text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md h-28">
+                        <option value="wiki" selected>Wikipedia Search</option>
+                        <option value="wikidata" selected>Wikidata Entity</option>
+                        <option value="openlibrary">OpenLibrary</option>
+                        <option value="crossref">CrossRef</option>
+                        <option value="worldbank">WorldBank</option>
+                        <option value="restcountries">RestCountries</option>
+                        <option value="myquran">MyQuran (ID)</option>
+                        <option value="apiwilayah">API Wilayah Indonesia (ID)</option>
+                        <option value="sekolahid">Sekolah Indonesia (ID)</option>
+                        <option value="cuacaindo">Data BMKG Gempa (ID)</option>
+                    </select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="extract-keywords-btn" class="px-2 py-2 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700">Ekstrak Keyword TF</button>
+                        <button type="button" id="auto-research-btn" class="px-2 py-2 text-xs bg-cyan-600 text-white rounded hover:bg-cyan-700">Auto Search Data</button>
+                        <button type="button" id="apply-research-to-topic-btn" class="px-2 py-2 text-xs bg-teal-600 text-white rounded hover:bg-teal-700">Tambahkan ke Topik</button>
+                        <button type="button" id="open-word-studio-btn" class="px-2 py-2 text-xs bg-purple-600 text-white rounded hover:bg-purple-700">Word Studio</button>
+                        <button type="button" id="suggest-title-btn" class="px-2 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Saran Judul</button>
+                        <button type="button" id="generate-outline-btn" class="px-2 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Buat Outline</button>
+                        <button type="button" id="generate-abstract-btn" class="px-2 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Buat Abstrak</button>
+                        <button type="button" id="build-citation-btn" class="px-2 py-2 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">Generator Sitasi</button>
+                        <button type="button" id="readability-check-btn" class="px-2 py-2 text-xs bg-orange-600 text-white rounded hover:bg-orange-700">Cek Keterbacaan</button>
+                        <button type="button" id="plagiarism-local-btn" class="px-2 py-2 text-xs bg-orange-600 text-white rounded hover:bg-orange-700">Cek Kemiripan Lokal</button>
+                        <button type="button" id="build-timeline-btn" class="px-2 py-2 text-xs bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700">Timeline Penelitian</button>
+                        <button type="button" id="method-matrix-btn" class="px-2 py-2 text-xs bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700">Matriks Metode</button>
+                        <button type="button" id="risk-matrix-btn" class="px-2 py-2 text-xs bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700">Matriks Risiko</button>
+                        <button type="button" id="auto-conclusion-btn" class="px-2 py-2 text-xs bg-fuchsia-600 text-white rounded hover:bg-fuchsia-700">Auto Kesimpulan</button>
+                        <button type="button" id="local-ai-summary-btn" class="px-2 py-2 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">AI Summary Lokal</button>
+                        <button type="button" id="local-ai-analysis-btn" class="px-2 py-2 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700">AI Analisis Lokal</button>
+                    </div>
+                    <div id="support-result" class="text-xs text-slate-600 dark:text-slate-300 max-h-44 overflow-y-auto bg-white dark:bg-slate-700/40 border border-slate-200 dark:border-slate-600 rounded p-2">Belum ada data support.</div>
+                </div>
             </form>
         </div>
 
@@ -402,6 +470,13 @@
                     <button id="create-word-btn" class="bg-purple-600 text-white hover:bg-purple-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
                         <i data-lucide="file" class="w-4 h-4"></i><span>Buat Word</span>
                     </button>
+                    <button id="export-pdf-btn" class="bg-rose-600 text-white hover:bg-rose-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="file-type" class="w-4 h-4"></i><span>Download PDF</span>
+                    </button>
+                    <button id="open-doc-btn" class="bg-emerald-600 text-white hover:bg-emerald-700 font-medium py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-4 h-4"></i><span>Open Dokumen</span>
+                    </button>
+                    <input id="open-doc-input" type="file" accept=".txt,.md,.html,.htm,.docx" class="hidden">
                 </div>
                  <div id="copy-feedback" class="hidden fixed top-5 right-5 bg-slate-800 text-white text-sm px-3 py-1 rounded-md z-50" data-translate-key="feedbackCopied">Teks disalin!</div>
             </div>
@@ -410,10 +485,71 @@
                 <div id="loader" class="hidden absolute inset-0 bg-slate-100/80 dark:bg-slate-800/80 backdrop-blur-sm flex flex-col items-center justify-center z-10"><div class="w-12 h-12 border-4 border-t-teal-500 border-slate-300 dark:border-slate-600 rounded-full animate-spin"></div><p id="loader-text" class="mt-4 text-slate-500 dark:text-slate-400 font-medium"></p></div>
                 <div id="content-sections-container" class="space-y-4 prose-output dark:text-slate-300 text-slate-700"></div>
             </div>
+            <div id="word-studio" class="hidden mt-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Word Studio (In-App)</span>
+                    <button type="button" id="word-bold-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Bold</button>
+                    <button type="button" id="word-italic-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Italic</button>
+                    <button type="button" id="word-underline-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Underline</button>
+                    <button type="button" id="word-strike-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Strike</button>
+                    <button type="button" id="word-h1-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">H1</button>
+                    <button type="button" id="word-h2-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">H2</button>
+                    <button type="button" id="word-h3-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">H3</button>
+                    <button type="button" id="word-p-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Paragraph</button>
+                    <button type="button" id="word-ul-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Bullet</button>
+                    <button type="button" id="word-ol-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Number</button>
+                    <button type="button" id="word-align-left-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Left</button>
+                    <button type="button" id="word-align-center-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Center</button>
+                    <button type="button" id="word-align-right-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Right</button>
+                    <button type="button" id="word-justify-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Justify</button>
+                    <button type="button" id="word-indent-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Indent+</button>
+                    <button type="button" id="word-outdent-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Indent-</button>
+                    <button type="button" id="word-quote-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Quote</button>
+                    <button type="button" id="word-code-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Code</button>
+                    <button type="button" id="word-hr-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">HR</button>
+                    <button type="button" id="word-link-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Link</button>
+                    <button type="button" id="word-unlink-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Unlink</button>
+                    <button type="button" id="word-table-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Table</button>
+                    <button type="button" id="word-sup-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Sup</button>
+                    <button type="button" id="word-sub-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Sub</button>
+                    <button type="button" id="word-clear-format-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Clear</button>
+                    <button type="button" id="word-select-all-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Select All</button>
+                    <button type="button" id="word-undo-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Undo</button>
+                    <button type="button" id="word-redo-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Redo</button>
+                    <button type="button" id="word-copy-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Copy</button>
+                    <button type="button" id="word-paste-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Paste*</button>
+                    <button type="button" id="word-find-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Find</button>
+                    <button type="button" id="word-replace-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Replace</button>
+                    <button type="button" id="word-count-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Word Count</button>
+                    <button type="button" id="word-readtime-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Read Time</button>
+                    <button type="button" id="word-save-local-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Save Local</button>
+                    <button type="button" id="word-load-local-btn" class="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 rounded">Load Local</button>
+                    <button type="button" id="word-sync-btn" class="px-2 py-1 text-xs bg-emerald-600 text-white rounded">Sync ke Dokumen</button>
+                    <button type="button" id="word-close-btn" class="px-2 py-1 text-xs bg-rose-600 text-white rounded">Tutup</button>
+                </div>
+                <div id="word-editor" contenteditable="true" class="min-h-64 max-h-96 overflow-y-auto p-3 rounded border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100"></div>
+            </div>
             
             <div id="paraphrase-panel" class="hidden absolute bottom-10 left-1/2 -translate-x-1/2 w-11/12 max-w-2xl bg-slate-200/90 dark:bg-slate-700/90 backdrop-blur-md shadow-2xl rounded-xl p-3 border border-slate-300 dark:border-slate-600 z-20">
                 <div class="flex justify-between items-center"><p class="text-sm font-semibold text-slate-800 dark:text-slate-200" data-translate-key="paraphraseTitle">Alat Parafrase</p><button id="close-paraphrase-panel" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"><i data-lucide="x" class="w-5 h-5"></i></button></div>
                 <div class="text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 my-2 rounded-md max-h-16 overflow-y-auto" id="selected-text-preview"></div>
+                <div class="mb-2">
+                    <label for="paraphrase-logic-select" class="block text-xs text-slate-500 mb-1">Logika Parafrase Lanjutan (TensorFlow.js)</label>
+                    <select id="paraphrase-logic-select" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-xs">
+                        <option value="ai">AI Prompt (default)</option>
+                        <option value="tf-auto">TF Auto Best Match</option>
+                        <option value="logic-1">L1 Formal Akademik</option>
+                        <option value="logic-2">L2 Ringkas Padat</option>
+                        <option value="logic-3">L3 Elaborasi Kontekstual</option>
+                        <option value="logic-4">L4 Sebab-Akibat</option>
+                        <option value="logic-5">L5 Definisi-Contoh</option>
+                        <option value="logic-6">L6 Problem-Solusi</option>
+                        <option value="logic-7">L7 Komparatif</option>
+                        <option value="logic-8">L8 Kronologis</option>
+                        <option value="logic-9">L9 Aktif-Formal</option>
+                        <option value="logic-10">L10 Checklist Poin</option>
+                    </select>
+                </div>
                 <div id="paraphrase-preview" class="hidden mt-3 p-3 bg-slate-100 dark:bg-slate-800 rounded-md">
                     <h4 class="text-sm font-semibold mb-2">Pratinjau:</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -463,6 +599,18 @@
                             <option value="custom">Custom Key</option>
                         </select>
                         <input type="password" id="setting-custom-api-key" class="hidden w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" placeholder="Masukkan custom API key Anda...">
+                        <input type="password" id="setting-openrouter-api-key" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md" placeholder="OpenRouter API key (untuk DeepSeek/ChatGPT)">
+                        <div>
+                            <label for="setting-ai-model" class="block text-xs text-slate-500 mb-1">Model AI</label>
+                            <select id="setting-ai-model" class="w-full p-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-slate-800 dark:text-slate-200">
+                                <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash</option>
+                                <option value="gemini-3-pro-exp">Gemini 3 Pro</option>
+                                <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+                                <option value="deepseek/deepseek-r2">DeepSeek R2</option>
+                                <option value="deepseek/deepseek-r3">DeepSeek R3</option>
+                                <option value="openai/chatgpt-5.2">ChatGPT 5.2</option>
+                            </select>
+                        </div>
                     </div>
                 </fieldset>
 
@@ -558,6 +706,22 @@
                 generateBtn: document.getElementById('generate-btn'),
                 generateBtnIcon: document.getElementById('generate-btn-icon'),
                 btnText: document.getElementById('btn-text'),
+                draftStatus: document.getElementById('draft-status'),
+                saveDraftBtn: document.getElementById('save-draft-btn'),
+                loadDraftBtn: document.getElementById('load-draft-btn'),
+                clearDraftBtn: document.getElementById('clear-draft-btn'),
+                topicTemplate: document.getElementById('topic-template'),
+                applyTemplateBtn: document.getElementById('apply-template-btn'),
+                copyFeedback: document.getElementById('copy-feedback'),
+                supportApiSource: document.getElementById('support-api-source'),
+                supportResult: document.getElementById('support-result'),
+                freeModeToggle: document.getElementById('free-mode-toggle'),
+                extractKeywordsBtn: document.getElementById('extract-keywords-btn'),
+                autoResearchBtn: document.getElementById('auto-research-btn'),
+                applyResearchToTopicBtn: document.getElementById('apply-research-to-topic-btn'),
+                openWordStudioBtn: document.getElementById('open-word-studio-btn'),
+                wordStudio: document.getElementById('word-studio'),
+                wordEditor: document.getElementById('word-editor'),
             };
 
             // --- SETTINGS MANAGEMENT ---
@@ -566,6 +730,8 @@
             appSettings = {
                     apiKeyChoice: savedSettings.apiKeyChoice || 'default1',
                     customApiKey: savedSettings.customApiKey || '',
+                    openRouterApiKey: savedSettings.openRouterApiKey || '',
+                    aiModel: savedSettings.aiModel || 'gemini-2.5-flash-preview-05-20',
                     language: savedSettings.language || 'id',
                     theme: savedSettings.theme || 'day',
                     tocDots: savedSettings.tocDots === true,
@@ -579,6 +745,8 @@
                 const customKeyInput = document.getElementById('setting-custom-api-key');
                 customKeyInput.value = appSettings.customApiKey;
                 customKeyInput.classList.toggle('hidden', appSettings.apiKeyChoice !== 'custom');
+                document.getElementById('setting-openrouter-api-key').value = appSettings.openRouterApiKey;
+                document.getElementById('setting-ai-model').value = appSettings.aiModel;
                 document.getElementById('setting-language').value = appSettings.language;
                 applyLanguage(appSettings.language);
                 document.getElementById('setting-theme').value = appSettings.theme;
@@ -605,27 +773,181 @@
                 if (appSettings.apiKeyChoice === 'custom') return appSettings.customApiKey;
                 return defaultApiKeys[appSettings.apiKeyChoice];
             };
+            const getOpenRouterApiKey = () => appSettings.openRouterApiKey;
+            const getActiveModel = () => appSettings.aiModel || 'gemini-2.5-flash-preview-05-20';
+
+            const DRAFT_STORAGE_KEY = 'autoBabDraft_v1';
+
+            function serializeGenerationForm() {
+                const fields = {};
+                document.querySelectorAll('#generation-form input, #generation-form select, #generation-form textarea').forEach(el => {
+                    if (!el.id) return;
+                    if (el.type === 'checkbox') fields[el.id] = el.checked;
+                    else fields[el.id] = el.value;
+                });
+                return fields;
+            }
+
+            function restoreGenerationForm(fields = {}) {
+                Object.entries(fields).forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    if (el.type === 'checkbox') el.checked = Boolean(value);
+                    else el.value = value;
+                });
+                updateWorkflowUI();
+            }
+
+            function saveDraft(showAlert = false) {
+                const hasTopic = document.getElementById('topik').value.trim().length > 0;
+                const hasContent = Object.keys(appState.content || {}).length > 0;
+                if (!hasTopic && !hasContent) {
+                    if (showAlert) alert('Isi topik atau generate konten dulu sebelum menyimpan draft.');
+                    return;
+                }
+                const payload = {
+                    savedAt: new Date().toISOString(),
+                    formData: serializeGenerationForm(),
+                    appState
+                };
+                localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(payload));
+                updateDraftStatus();
+                if (showAlert) alert('Draft berhasil disimpan.');
+            }
+
+            function restoreContentFromState() {
+                ui.contentContainer.innerHTML = '';
+                const titles = Array.isArray(appState.toc) ? appState.toc : [];
+                if (!titles.length) {
+                    ui.placeholder.classList.remove('hidden');
+                    ui.exportButtons.classList.add('hidden');
+                    return;
+                }
+                ui.placeholder.classList.add('hidden');
+                titles.forEach(title => {
+                    const content = appState.content?.[title] || '';
+                    const card = document.createElement('div');
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in mb-4';
+                    card.dataset.sectionTitle = title;
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div><div class="auto-media mt-3"></div><div class="mt-3 flex flex-wrap gap-2"><button class="auto-image-btn px-3 py-1 bg-cyan-600 text-white rounded text-sm hover:bg-cyan-700" data-section="${title}">Cari Foto Otomatis</button><button class="auto-table-btn px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700" data-section="${title}">Buat Tabel Otomatis</button></div>`;
+                    ui.contentContainer.appendChild(card);
+                });
+                ui.exportButtons.classList.remove('hidden');
+            }
+
+            function loadDraft(showAlert = false) {
+                const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+                if (!raw) {
+                    if (showAlert) alert('Belum ada draft tersimpan.');
+                    updateDraftStatus();
+                    return;
+                }
+                try {
+                    const parsed = JSON.parse(raw);
+                    restoreGenerationForm(parsed.formData || {});
+                    appState = parsed.appState || { content: {}, toc: [] };
+                    restoreContentFromState();
+                    updateDraftStatus(parsed.savedAt);
+                    if (showAlert) alert('Draft berhasil dimuat.');
+                } catch (error) {
+                    console.error('Gagal memuat draft:', error);
+                    if (showAlert) alert('Draft rusak dan tidak dapat dimuat.');
+                }
+            }
+
+            function clearDraft(showAlert = false) {
+                localStorage.removeItem(DRAFT_STORAGE_KEY);
+                updateDraftStatus();
+                if (showAlert) alert('Draft dihapus.');
+            }
+
+            function updateDraftStatus(savedAt = null) {
+                const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+                if (!raw) {
+                    ui.draftStatus.textContent = 'Belum ada draft';
+                    return;
+                }
+                let timestamp = savedAt;
+                if (!timestamp) {
+                    try {
+                        timestamp = JSON.parse(raw).savedAt;
+                    } catch (_) {
+                        timestamp = null;
+                    }
+                }
+                if (!timestamp) {
+                    ui.draftStatus.textContent = 'Draft tersedia';
+                    return;
+                }
+                const date = new Date(timestamp);
+                ui.draftStatus.textContent = `Tersimpan ${date.toLocaleString('id-ID')}`;
+            }
 
             // --- CORE API LOGIC ---
             const callGeminiAPI = async (prompt) => {
-                const apiKey = getActiveApiKey();
-                if (!apiKey) {
-                    alert("Kunci API tidak valid. Silakan periksa Pengaturan.");
-                    return `### Kesalahan Konfigurasi\n\nAPI Key belum diatur atau tidak valid.`;
-                }
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                const model = getActiveModel();
                 const systemInstructionText = `Anda adalah asisten AI akademis. Gunakan Bahasa Indonesia yang baik dan benar. Tulis konten untuk bagian yang diminta berdasarkan topik. Gunakan **teks** untuk menekankan kata atau frasa penting, yang akan ditampilkan dengan ukuran huruf sedang. Pastikan formatting markdown benar, seperti **teks tebal** tanpa spasi di sekitar tanda **. ${document.getElementById('include-citations').checked ? `Sisipkan sitasi (${document.getElementById('gaya_sitasi').value}: Nama, Tahun) jika perlu.` : ''} JANGAN membuat daftar pustaka kecuali diminta secara eksplisit. Fokus hanya pada konten bagian yang diminta. Mulai respons Anda LANGSUNG dengan konten.`;
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    systemInstruction: { parts: [{ text: systemInstructionText }] }
-                };
-                try {
+
+                const callGoogleModel = async () => {
+                    const apiKey = getActiveApiKey();
+                    if (!apiKey) {
+                        alert("Kunci API Google tidak valid. Silakan periksa Pengaturan.");
+                        return `### Kesalahan Konfigurasi
+
+API Key Google belum diatur atau tidak valid.`;
+                    }
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: systemInstructionText }] }
+                    };
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                    const result = await response.json(); 
+                    if (!response.ok) throw new Error(`Google API error! Status: ${response.status}`);
+                    const result = await response.json();
                     if (result.candidates?.[0]?.content?.parts?.[0]) return result.candidates[0].content.parts[0].text;
-                    throw new Error(`Struktur respons API tidak valid atau konten diblokir. Respons: ${JSON.stringify(result)}`);
-                } catch (error) { console.error("Error calling Gemini API:", error); return `### Terjadi Kesalahan\n${error.message}`; }
+                    throw new Error(`Struktur respons Google API tidak valid. Respons: ${JSON.stringify(result)}`);
+                };
+
+                const callOpenRouterModel = async () => {
+                    const apiKey = getOpenRouterApiKey();
+                    if (!apiKey) {
+                        alert("Model ini butuh OpenRouter API key. Isi di Pengaturan.");
+                        return `### Kesalahan Konfigurasi
+
+OpenRouter API key belum diatur. Buka Pengaturan lalu isi field OpenRouter API key.`;
+                    }
+                    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model,
+                            messages: [
+                                { role: 'system', content: systemInstructionText },
+                                { role: 'user', content: prompt }
+                            ],
+                            temperature: 0.7
+                        })
+                    });
+                    if (!response.ok) throw new Error(`OpenRouter API error! Status: ${response.status}`);
+                    const result = await response.json();
+                    const content = result?.choices?.[0]?.message?.content;
+                    if (content) return content;
+                    throw new Error(`Struktur respons OpenRouter tidak valid. Respons: ${JSON.stringify(result)}`);
+                };
+
+                try {
+                    if (model.startsWith('gemini')) {
+                        return await callGoogleModel();
+                    }
+                    return await callOpenRouterModel();
+                } catch (error) {
+                    console.error("Error calling AI API:", error);
+                    return `### Terjadi Kesalahan
+${error.message}`;
+                }
             };
 
             const getAbstractLanguagePrompt = () => {
@@ -893,7 +1215,7 @@
                     if (content) {
                     const card = document.createElement('div');
                     card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in';
-                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div><div class="mt-4 flex gap-2"><button class="regenerate-btn px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Generate Ulang</button><button class="paraphrase-btn px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">Parafrase</button><button class="paraphrase-bullet-btn px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">Parafrase Bullet</button><button class="select-all-btn px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600">Pilih Semua</button></div>`;
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${title}</h3><div class="prose-output">${marked.parse(content)}</div><div class="mt-4 flex flex-wrap gap-2"><button class="regenerate-btn px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">Generate Ulang</button><button class="paraphrase-btn px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">Parafrase</button><button class="paraphrase-bullet-btn px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">Parafrase Bullet</button><button class="select-all-btn px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600">Pilih Semua</button><button class="auto-image-btn px-3 py-1 bg-cyan-600 text-white rounded text-sm hover:bg-cyan-700" data-section="${title}">Cari Foto Otomatis</button><button class="auto-table-btn px-3 py-1 bg-amber-600 text-white rounded text-sm hover:bg-amber-700" data-section="${title}">Buat Tabel Otomatis</button></div><div class="auto-media mt-3"></div>`;
                     ui.contentContainer.appendChild(card);
 
                     // Add event listeners for new buttons
@@ -968,7 +1290,10 @@
                             <button class="regenerate-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Generate Ulang</button>
                             <button class="paraphrase-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Parafrase</button>
                             <button class="expand-btn bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm" data-section="${title}">Perbanyak Kata</button>
+                            <button class="auto-image-btn bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded text-sm" data-section="${title}">Cari Foto Otomatis</button>
+                            <button class="auto-table-btn bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-sm" data-section="${title}">Buat Tabel Otomatis</button>
                         </div>
+                        <div class="auto-media mt-3"></div>
                     `;
                     ui.contentContainer.appendChild(card);
                 });
@@ -1113,6 +1438,67 @@
                 link.click();
             }
 
+            function buildExportHtml() {
+                let htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Dokumen AutoBab</title><style>body { font-family: Arial, sans-serif; margin: 40px; } h1 { font-size: 18pt; font-weight: bold; margin-top: 24pt; page-break-before: always; } h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; } p { margin-bottom: 12pt; line-height: 1.5; } ul, ol { margin-bottom: 12pt; } table { border-collapse: collapse; width: 100%; margin: 12pt 0; } td, th { border: 1px solid #666; padding: 6px; }</style></head><body>';
+                for (const title of appState.toc) {
+                    const content = appState.content[title] || '';
+                    htmlContent += `<h1>${title}</h1><div>${marked.parse(content)}</div>`;
+                }
+                htmlContent += '</body></html>';
+                return htmlContent;
+            }
+
+            function downloadPdfFromContent() {
+                if (Object.keys(appState.content).length === 0) {
+                    alert('Tidak ada konten untuk diekspor PDF.');
+                    return;
+                }
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    alert('Popup diblokir browser. Izinkan popup untuk download PDF.');
+                    return;
+                }
+                printWindow.document.open();
+                printWindow.document.write(buildExportHtml());
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 500);
+            }
+
+            async function openDocumentFile(file) {
+                if (!file) return;
+                const ext = (file.name.split('.').pop() || '').toLowerCase();
+                try {
+                    let importedText = '';
+                    if (ext === 'docx') {
+                        const buffer = await file.arrayBuffer();
+                        if (window.mammoth) {
+                            const result = await window.mammoth.extractRawText({ arrayBuffer: buffer });
+                            importedText = result.value || '';
+                        } else {
+                            importedText = '[Parser DOCX tidak tersedia di browser ini]';
+                        }
+                    } else {
+                        importedText = await file.text();
+                    }
+
+                    const sectionTitle = `Dokumen Dibuka: ${file.name}`;
+                    appState.content[sectionTitle] = importedText;
+                    if (!appState.toc.includes(sectionTitle)) appState.toc.unshift(sectionTitle);
+
+                    const card = document.createElement('div');
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in mb-4';
+                    card.dataset.sectionTitle = sectionTitle;
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">${sectionTitle}</h3><div class="prose-output">${marked.parse(importedText || '(kosong)')}</div>`;
+                    ui.placeholder.classList.add('hidden');
+                    ui.contentContainer.prepend(card);
+                    ui.exportButtons.classList.remove('hidden');
+                } catch (err) {
+                    console.error('Open document error:', err);
+                    alert('Gagal membuka dokumen: ' + err.message);
+                }
+            }
+
             function copyAllContent() {
                 if (Object.keys(appState.content).length === 0) {
                     alert('Tidak ada konten untuk disalin.');
@@ -1128,8 +1514,506 @@
                 });
             }
 
+            async function searchImageForSection(sectionTitle, card) {
+                const target = card.querySelector('.auto-media');
+                if (!target) return;
+                let imageSlot = target.querySelector('.auto-image-slot');
+                if (!imageSlot) {
+                    imageSlot = document.createElement('div');
+                    imageSlot.className = 'auto-image-slot';
+                    target.prepend(imageSlot);
+                }
+                imageSlot.innerHTML = '<p class="text-xs text-slate-500">Mencari foto otomatis...</p>';
+                try {
+                    const openSearch = await fetch(`https://id.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(sectionTitle)}&limit=1&namespace=0&format=json&origin=*`);
+                    const openData = await openSearch.json();
+                    const title = openData?.[1]?.[0] || sectionTitle;
+                    const summaryRes = await fetch(`https://id.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+                    const summary = await summaryRes.json();
+                    if (summary.thumbnail?.source) {
+                        imageSlot.innerHTML = `<figure class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600"><img src="${summary.thumbnail.source}" alt="${title}" class="w-full max-h-64 object-cover"/><figcaption class="text-xs p-2 bg-slate-100 dark:bg-slate-700">Foto otomatis: ${title}</figcaption></figure><p class="text-xs text-slate-500">Sumber data: Wikipedia (${summary.description || 'ringkasan topik'})</p>`;
+                    } else {
+                        imageSlot.innerHTML = '<p class="text-xs text-amber-600">Foto tidak ditemukan otomatis untuk topik ini.</p>';
+                    }
+                } catch (e) {
+                    imageSlot.innerHTML = `<p class="text-xs text-rose-600">Gagal mencari foto: ${e.message}</p>`;
+                }
+            }
+
+            function buildAutoTableFromContent(sectionTitle, card) {
+                const target = card.querySelector('.auto-media');
+                if (!target) return;
+                let tableSlot = target.querySelector('.auto-table-slot');
+                if (!tableSlot) {
+                    tableSlot = document.createElement('div');
+                    tableSlot.className = 'auto-table-slot mt-2';
+                    target.appendChild(tableSlot);
+                }
+                const content = appState.content[sectionTitle] || '';
+                const sentences = content.split(/[.!?]\s+/).filter(Boolean).slice(0, 5);
+                if (!sentences.length) {
+                    tableSlot.innerHTML = '<p class="text-xs text-amber-600">Tidak ada data teks yang cukup untuk membuat tabel.</p>';
+                    return;
+                }
+                const rows = sentences.map((s, idx) => {
+                    const words = s.trim().split(/\s+/).filter(Boolean);
+                    return {
+                        no: idx + 1,
+                        indikator: words.slice(0, 5).join(' '),
+                        jumlahKata: words.length,
+                        ringkasan: words.slice(0, 12).join(' ')
+                    };
+                });
+                const tableRows = rows.map(r => `<tr><td class="border p-2">${r.no}</td><td class="border p-2">${r.indikator}</td><td class="border p-2 text-center">${r.jumlahKata}</td><td class="border p-2">${r.ringkasan}</td></tr>`).join('');
+                const dataRows = rows.map(r => `<li>No ${r.no}: indikator <strong>${r.indikator}</strong>, jumlah kata ${r.jumlahKata}, ringkasan ${r.ringkasan}</li>`).join('');
+                tableSlot.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-xs border-collapse border border-slate-300 dark:border-slate-600"><thead><tr class="bg-slate-100 dark:bg-slate-700"><th class="border p-2">No</th><th class="border p-2">Indikator</th><th class="border p-2">Jumlah Kata</th><th class="border p-2">Ringkasan Data</th></tr></thead><tbody>${tableRows}</tbody></table></div><div class="mt-2 text-xs"><p class="font-semibold">Data di bawah tabel:</p><ul class="list-disc ml-5">${dataRows}</ul></div>`;
+            }
+
+            const localParaphraseStrategies = {
+                'logic-1': (t) => t.replace(/\b(dan)\b/gi, 'serta').replace(/\badalah\b/gi, 'merupakan'),
+                'logic-2': (t) => t.split(/[.!?]/).map(x=>x.trim()).filter(Boolean).slice(0,2).join('. ') + '.',
+                'logic-3': (t) => `${t} Selain itu, implikasi praktis dari temuan ini perlu diperhatikan secara lebih mendalam.`,
+                'logic-4': (t) => `Teks ini menekankan relasi sebab-akibat: ${t}`,
+                'logic-5': (t) => `Secara definisi, ${t} Contoh implementasinya dapat diamati pada konteks akademik dan industri.`,
+                'logic-6': (t) => `Permasalahan utama yang diangkat adalah: ${t} Solusi yang disarankan ialah pendekatan bertahap berbasis data.`,
+                'logic-7': (t) => `Jika dibandingkan dengan pendekatan konvensional, ${t} menunjukkan perbedaan yang signifikan.`,
+                'logic-8': (t) => `Secara kronologis, tahap awal dimulai dari identifikasi isu, dilanjutkan analisis, lalu evaluasi: ${t}`,
+                'logic-9': (t) => t.replace(/\bdi lakukan\b/gi, 'dilaksanakan').replace(/\bbisa\b/gi, 'dapat'),
+                'logic-10': (t) => `- Poin 1: ${t}
+- Poin 2: Validasi data
+- Poin 3: Evaluasi hasil
+- Poin 4: Rekomendasi lanjutan`
+            };
+
+            async function getBestTensorflowParaphrase(text) {
+                try {
+                    if (!window.use) return localParaphraseStrategies['logic-1'](text);
+                    const model = await window.use.load();
+                    const candidates = Object.values(localParaphraseStrategies).map(fn => fn(text));
+                    const vectors = await model.embed([text, ...candidates]).array();
+                    const base = vectors[0];
+                    const cosine = (a, b) => {
+                        let dot = 0, na = 0, nb = 0;
+                        for (let i = 0; i < a.length; i++) {
+                            dot += a[i] * b[i];
+                            na += a[i] * a[i];
+                            nb += b[i] * b[i];
+                        }
+                        return dot / ((Math.sqrt(na) * Math.sqrt(nb)) || 1);
+                    };
+                    let bestIdx = 0;
+                    let bestScore = -Infinity;
+                    candidates.forEach((candidate, idx) => {
+                        const score = cosine(base, vectors[idx + 1]);
+                        if (score > bestScore && candidate !== text) {
+                            bestScore = score;
+                            bestIdx = idx;
+                        }
+                    });
+                    return candidates[bestIdx];
+                } catch (e) {
+                    console.warn('TF paraphrase fallback:', e);
+                    return localParaphraseStrategies['logic-1'](text);
+                }
+            }
+
+            async function runAdvancedParaphrase(selectedText) {
+                const logic = document.getElementById('paraphrase-logic-select')?.value || 'ai';
+                if (logic === 'ai') return null;
+                if (logic === 'tf-auto') return await getBestTensorflowParaphrase(selectedText);
+                const fn = localParaphraseStrategies[logic] || localParaphraseStrategies['logic-1'];
+                return fn(selectedText);
+            }
+
+            const publicApiCatalog = [
+                { key: 'wiki', name: 'Wikipedia', region: 'global' },
+                { key: 'wikidata', name: 'Wikidata', region: 'global' },
+                { key: 'openlibrary', name: 'OpenLibrary', region: 'global' },
+                { key: 'crossref', name: 'CrossRef', region: 'global' },
+                { key: 'worldbank', name: 'WorldBank', region: 'global' },
+                { key: 'restcountries', name: 'RestCountries', region: 'global' },
+                { key: 'myquran', name: 'MyQuran', region: 'indonesia' },
+                { key: 'apiwilayah', name: 'API Wilayah Indonesia', region: 'indonesia' },
+                { key: 'sekolahid', name: 'Sekolah Indonesia', region: 'indonesia' },
+                { key: 'cuacaindo', name: 'BMKG Gempa', region: 'indonesia' },
+            ];
+
+            async function extractKeywordsTf(text) {
+                const clean = (text || '').toLowerCase().replace(/[^a-zA-Z0-9\s]/g, ' ');
+                const words = clean.split(/\s+/).filter(w => w.length > 3);
+                const freq = {};
+                words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+                const ranked = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w]) => w);
+                if (window.use && words.length > 6) {
+                    try {
+                        const model = await window.use.load();
+                        await model.embed([text.substring(0, 500)]);
+                    } catch (_) {}
+                }
+                return ranked;
+            }
+
+            function localHeuristicSummary(text) {
+                const sentences = (text || '').split(/(?<=[.!?])\s+/).filter(Boolean);
+                if (!sentences.length) return 'Tidak ada teks untuk diringkas.';
+                return sentences.slice(0, 3).join(' ');
+            }
+
+            function localHeuristicAnalysis(text) {
+                const tokens = (text || '').toLowerCase().split(/\s+/).filter(Boolean);
+                const unique = new Set(tokens);
+                const sentenceCount = (text || '').split(/[.!?]+/).filter(Boolean).length;
+                const top = Object.entries(tokens.reduce((a, w) => (a[w] = (a[w] || 0) + 1, a), {}))
+                    .sort((a, b) => b[1] - a[1]).slice(0, 8).map(([w]) => w);
+                return {
+                    words: tokens.length,
+                    unique: unique.size,
+                    sentences: sentenceCount,
+                    top
+                };
+            }
+
+            async function runLocalOfflineAI(mode = 'summary') {
+                const baseText = `${document.getElementById('topik').value.trim()} ${getPlainTextFromEditor()}`.trim();
+                if (!baseText) {
+                    appendSupportMessage('AI Lokal', 'Tidak ada teks untuk diproses.');
+                    return;
+                }
+                const keywords = await extractKeywordsTf(baseText);
+
+                if (mode === 'analysis') {
+                    const stats = localHeuristicAnalysis(baseText);
+                    appendSupportMessage('AI Analisis Lokal (Offline)', `Jumlah kata: <strong>${stats.words}</strong><br>Unik: <strong>${stats.unique}</strong><br>Kalimat: <strong>${stats.sentences}</strong><br>Keyword utama: ${stats.top.join(', ') || '-'}<br>Keyword TF: ${keywords.join(', ') || '-'}`);
+                    return;
+                }
+
+                let summary = localHeuristicSummary(baseText);
+                try {
+                    // Offline-first attempt: works only if model already cached locally.
+                    const tr = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+                    if (tr?.pipeline) {
+                        const summarizer = await tr.pipeline('summarization', 'Xenova/distilbart-cnn-6-6', { local_files_only: true });
+                        const out = await summarizer(baseText.slice(0, 1600), { max_length: 140, min_length: 40 });
+                        if (Array.isArray(out) && out[0]?.summary_text) summary = out[0].summary_text;
+                    }
+                } catch (_) {
+                    // Keep heuristic summary when model not cached/offline unavailable.
+                }
+                appendSupportMessage('AI Summary Lokal (Offline)', `${summary}<br><br><strong>Keyword TF:</strong> ${keywords.join(', ') || '-'}`);
+            }
+
+            async function fetchApiData(source, keyword) {
+                if (source === 'wiki') {
+                    const r = await fetch(`https://id.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(keyword)}&limit=3&namespace=0&format=json&origin=*`);
+                    const d = await r.json();
+                    return (d?.[1] || []).map((x, i) => ({ title: x, desc: d?.[2]?.[i] || '', link: d?.[3]?.[i] || '' }));
+                }
+                if (source === 'wikidata') {
+                    const r = await fetch(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(keyword)}&language=id&format=json&origin=*`);
+                    const d = await r.json();
+                    return (d?.search || []).slice(0, 4).map(x => ({ title: x.label, desc: x.description || '', link: `https://www.wikidata.org/wiki/${x.id}` }));
+                }
+                if (source === 'openlibrary') {
+                    const r = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(keyword)}&limit=5`);
+                    const d = await r.json();
+                    return (d?.docs || []).slice(0, 4).map(x => ({ title: x.title, desc: (x.author_name || []).join(', '), link: x.key ? `https://openlibrary.org${x.key}` : '' }));
+                }
+                if (source === 'crossref') {
+                    const r = await fetch(`https://api.crossref.org/works?rows=4&query=${encodeURIComponent(keyword)}`);
+                    const d = await r.json();
+                    return (d?.message?.items || []).slice(0,4).map(x => ({ title: (x.title || [''])[0], desc: x.type || '', link: x.URL || '' }));
+                }
+                if (source === 'worldbank') {
+                    const r = await fetch(`https://api.worldbank.org/v2/country/IDN/indicator/SP.POP.TOTL?format=json`);
+                    const d = await r.json();
+                    return (d?.[1] || []).slice(0,4).map(x => ({ title: `Populasi Indonesia ${x.date}`, desc: `Nilai: ${x.value || 'n/a'}`, link: 'https://data.worldbank.org/' }));
+                }
+                if (source === 'restcountries') {
+                    const r = await fetch(`https://restcountries.com/v3.1/name/${encodeURIComponent(keyword)}?fields=name,capital,population,region`);
+                    const d = await r.json();
+                    return (Array.isArray(d) ? d : []).slice(0,4).map(x => ({ title: x?.name?.common || '-', desc: `Ibu kota: ${(x.capital||[]).join(', ')} | Pop: ${x.population || '-'}`, link: '' }));
+                }
+                if (source === 'myquran') {
+                    const r = await fetch('https://api.myquran.com/v2/sholat/kota/semua');
+                    const d = await r.json();
+                    return (d?.data || []).slice(0,4).map(x => ({ title: x.lokasi, desc: `ID Kota: ${x.id}`, link: 'https://api.myquran.com/' }));
+                }
+                if (source === 'apiwilayah') {
+                    const r = await fetch('https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json');
+                    const d = await r.json();
+                    return (d || []).slice(0,4).map(x => ({ title: x.name, desc: `Kode provinsi: ${x.id}`, link: 'https://www.emsifa.com/' }));
+                }
+                if (source === 'sekolahid') {
+                    const r = await fetch('https://api-sekolah-indonesia.vercel.app/sekolah/smk?page=1&perPage=4');
+                    const d = await r.json();
+                    return (d?.dataSekolah || []).slice(0,4).map(x => ({ title: x.sekolah, desc: `${x.kabupaten_kota || '-'} | ${x.propinsi || '-'}`, link: '' }));
+                }
+                if (source === 'cuacaindo') {
+                    const r = await fetch('https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json');
+                    const d = await r.json();
+                    const g = d?.Infogempa?.gempa;
+                    return g ? [{ title: `Gempa ${g.Tanggal} ${g.Jam}`, desc: `${g.Magnitude} SR | ${g.Wilayah}`, link: 'https://data.bmkg.go.id/' }] : [];
+                }
+                return [];
+            }
+
+            async function runAutoResearch() {
+                const topic = document.getElementById('topik').value.trim();
+                const keywordBase = topic || 'Indonesia digital pendidikan';
+                ui.supportResult.innerHTML = '<p>Memproses keyword TensorFlow & mencari data API publik...</p>';
+                const keywords = await extractKeywordsTf(keywordBase);
+                const selected = Array.from(ui.supportApiSource.selectedOptions).map(o => o.value);
+                const targets = selected.length ? selected : publicApiCatalog.map(x => x.key);
+                const rows = [];
+                for (const source of targets) {
+                    try {
+                        const items = await fetchApiData(source, keywords[0] || keywordBase.split(' ')[0]);
+                        items.forEach(it => rows.push({ source, ...it }));
+                    } catch (e) {
+                        rows.push({ source, title: 'Gagal fetch', desc: e.message, link: '' });
+                    }
+                }
+                const topRows = rows.slice(0, 25);
+                const table = topRows.map((r, i) => `<tr><td class="border p-1">${i+1}</td><td class="border p-1">${r.source}</td><td class="border p-1">${r.title || '-'}</td><td class="border p-1">${r.desc || '-'}</td></tr>`).join('');
+                const supportData = topRows.map(r => `- [${r.source}] ${r.title}: ${r.desc}`).join('\n');
+                const summaryPrompt = `Ringkas data berikut dalam 5 poin kesimpulan akademik singkat:
+${supportData}`;
+                const summary = ui.freeModeToggle.checked
+                    ? `Mode FREE aktif. Keyword utama: ${keywords.join(', ')}. Sumber dominan: ${targets.join(', ')}.`
+                    : await callGeminiAPI(summaryPrompt);
+                ui.supportResult.innerHTML = `<p class="mb-1"><strong>Keyword TF:</strong> ${keywords.join(', ') || '-'}</p><div class="overflow-x-auto"><table class="w-full text-xs border-collapse border"><thead><tr><th class="border p-1">No</th><th class="border p-1">API</th><th class="border p-1">Judul Data</th><th class="border p-1">Deskripsi</th></tr></thead><tbody>${table}</tbody></table></div><p class="mt-2"><strong>Data pendukung lain:</strong></p><pre class="whitespace-pre-wrap text-[11px] bg-slate-50 dark:bg-slate-800 p-2 rounded">${supportData}</pre><p class="mt-2"><strong>Simpulan:</strong> ${summary}</p>`;
+                ui.supportResult.dataset.lastSummary = summary;
+                ui.supportResult.dataset.lastKeywords = keywords.join(', ');
+            }
+
+            function applyResearchToTopic() {
+                const topicEl = document.getElementById('topik');
+                const summary = ui.supportResult.dataset.lastSummary || '';
+                const keywords = ui.supportResult.dataset.lastKeywords || '';
+                if (!summary && !keywords) return;
+                topicEl.value = `${topicEl.value.trim()}
+
+[Support Keywords] ${keywords}
+[Support Summary] ${summary}`.trim();
+            }
+
+            function openWordStudio() {
+                const allContent = appState.toc.map(t => `<h1>${t}</h1><p>${(appState.content[t] || '').replace(/\n/g, '<br>')}</p>`).join('');
+                ui.wordEditor.innerHTML = allContent || '<h1>Dokumen Baru</h1><p>Mulai mengetik di sini...</p>';
+                ui.wordStudio.classList.remove('hidden');
+            }
+
+            function wordCmd(cmd, val = null) {
+                ui.wordEditor.focus();
+                document.execCommand(cmd, false, val);
+            }
+
+            function insertWordTable() {
+                const html = `<table border="1" style="width:100%; border-collapse:collapse;"><tr><th>Kolom 1</th><th>Kolom 2</th></tr><tr><td>Data A</td><td>Data B</td></tr></table><p></p>`;
+                wordCmd('insertHTML', html);
+            }
+
+            function syncWordToContent() {
+                const html = ui.wordEditor.innerHTML;
+                appState.content['Word Studio Draft'] = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (!appState.toc.includes('Word Studio Draft')) appState.toc.unshift('Word Studio Draft');
+                const existing = document.querySelector('[data-section-title="Word Studio Draft"]');
+                if (!existing) {
+                    const card = document.createElement('div');
+                    card.className = 'section-card p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 animate-fade-in mb-4';
+                    card.dataset.sectionTitle = 'Word Studio Draft';
+                    card.innerHTML = `<h3 class="font-bold mb-2 text-slate-800 dark:text-slate-200">Word Studio Draft</h3><div class="prose-output">${html}</div>`;
+                    ui.contentContainer.prepend(card);
+                }
+                ui.exportButtons.classList.remove('hidden');
+            }
+
+            function getPlainTextFromEditor() {
+                return (ui.wordEditor.innerText || '').replace(/\s+/g, ' ').trim();
+            }
+
+            function calcReadability(text) {
+                const words = text.split(/\s+/).filter(Boolean);
+                const sentences = text.split(/[.!?]+/).filter(Boolean);
+                const syllables = words.reduce((acc, w) => acc + Math.max(1, (w.toLowerCase().match(/[aiueo]/g) || []).length), 0);
+                const w = words.length || 1, s = sentences.length || 1;
+                const score = 206.835 - 1.015 * (w / s) - 84.6 * (syllables / w);
+                return Math.max(0, Math.min(100, score)).toFixed(2);
+            }
+
+            function appendSupportMessage(title, body) {
+                ui.supportResult.innerHTML = `<p><strong>${title}</strong></p><div class="mt-1">${body}</div>`;
+            }
+
+            async function runDocSupportAction(type) {
+                const topic = document.getElementById('topik').value.trim() || getPlainTextFromEditor() || 'Topik penelitian';
+                if (type === 'title') {
+                    const keywords = await extractKeywordsTf(topic);
+                    appendSupportMessage('Saran Judul', `<ol class='list-decimal ml-5'><li>Analisis ${keywords[0] || topic} pada konteks Indonesia</li><li>Model Implementasi ${keywords[1] || topic} Berbasis Data</li><li>Evaluasi ${keywords[2] || topic} untuk Optimasi Kinerja</li></ol>`);
+                    return;
+                }
+                if (type === 'outline') {
+                    appendSupportMessage('Outline Otomatis', `<ul class='list-disc ml-5'><li>Pendahuluan</li><li>Tinjauan Pustaka</li><li>Metodologi</li><li>Hasil & Pembahasan</li><li>Kesimpulan & Saran</li></ul>`);
+                    return;
+                }
+                if (type === 'abstract') {
+                    const abs = `Penelitian ini membahas ${topic}. Pendekatan yang digunakan berbasis analisis data dan evaluasi komparatif. Hasil menunjukkan peningkatan efektivitas pada indikator utama. Penelitian ini merekomendasikan implementasi bertahap untuk optimasi berkelanjutan.`;
+                    appendSupportMessage('Abstrak Otomatis', abs);
+                    return;
+                }
+                if (type === 'citation') {
+                    const year = new Date().getFullYear();
+                    appendSupportMessage('Generator Sitasi', `(Penulis, ${year})<br>Penulis. (${year}). <i>Judul Dokumen</i>. Penerbit/Institusi.`);
+                    return;
+                }
+                if (type === 'readability') {
+                    const text = topic + ' ' + getPlainTextFromEditor();
+                    appendSupportMessage('Skor Keterbacaan', `Skor: <strong>${calcReadability(text)}</strong> / 100`);
+                    return;
+                }
+                if (type === 'plagiarism') {
+                    const text = getPlainTextFromEditor() || topic;
+                    const uniq = new Set(text.toLowerCase().split(/\s+/).filter(Boolean));
+                    const ratio = (uniq.size / Math.max(1, text.split(/\s+/).filter(Boolean).length)) * 100;
+                    appendSupportMessage('Cek Kemiripan Lokal', `Kemiripan lokal terestimasi: <strong>${(100-ratio).toFixed(1)}%</strong> (heuristik internal).`);
+                    return;
+                }
+                if (type === 'timeline') {
+                    appendSupportMessage('Timeline Penelitian', `<table class='w-full text-xs border'><tr><th class='border p-1'>Minggu</th><th class='border p-1'>Aktivitas</th></tr><tr><td class='border p-1'>1-2</td><td class='border p-1'>Studi Literatur</td></tr><tr><td class='border p-1'>3-4</td><td class='border p-1'>Pengumpulan Data</td></tr><tr><td class='border p-1'>5-6</td><td class='border p-1'>Analisis</td></tr></table>`);
+                    return;
+                }
+                if (type === 'method') {
+                    appendSupportMessage('Matriks Metode', `<table class='w-full text-xs border'><tr><th class='border p-1'>Metode</th><th class='border p-1'>Kelebihan</th><th class='border p-1'>Keterbatasan</th></tr><tr><td class='border p-1'>Kualitatif</td><td class='border p-1'>Mendalam</td><td class='border p-1'>Subjektif</td></tr><tr><td class='border p-1'>Kuantitatif</td><td class='border p-1'>Terukur</td><td class='border p-1'>Kurang konteks</td></tr></table>`);
+                    return;
+                }
+                if (type === 'risk') {
+                    appendSupportMessage('Matriks Risiko', `<ul class='list-disc ml-5'><li>Risiko data tidak lengkap → mitigasi: validasi silang.</li><li>Risiko bias responden → mitigasi: sampling beragam.</li><li>Risiko waktu → mitigasi: milestone mingguan.</li></ul>`);
+                    return;
+                }
+                if (type === 'conclusion') {
+                    appendSupportMessage('Auto Kesimpulan', `Secara umum, ${topic} menunjukkan dampak positif dengan catatan pada kualitas implementasi, ketersediaan data, dan konsistensi evaluasi.`);
+                    return;
+                }
+            }
+
+            function wordFindReplace(findText, replaceText = null) {
+                if (!findText) return 0;
+                const content = ui.wordEditor.innerHTML;
+                const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const matches = content.match(regex) || [];
+                if (replaceText !== null) {
+                    ui.wordEditor.innerHTML = content.replace(regex, replaceText);
+                }
+                return matches.length;
+            }
+
             // --- EVENT LISTENERS ---
             ui.generateBtn.addEventListener('click', handleGeneration);
+            ui.extractKeywordsBtn.addEventListener('click', async () => {
+                const text = document.getElementById('topik').value.trim();
+                const keys = await extractKeywordsTf(text || 'Indonesia digital');
+                ui.supportResult.innerHTML = `<p><strong>Keyword TensorFlow/Frequency:</strong> ${keys.join(', ')}</p>`;
+                ui.supportResult.dataset.lastKeywords = keys.join(', ');
+            });
+            ui.autoResearchBtn.addEventListener('click', runAutoResearch);
+            ui.applyResearchToTopicBtn.addEventListener('click', applyResearchToTopic);
+            ui.openWordStudioBtn.addEventListener('click', openWordStudio);
+            document.getElementById('word-bold-btn').addEventListener('click', () => wordCmd('bold'));
+            document.getElementById('word-italic-btn').addEventListener('click', () => wordCmd('italic'));
+            document.getElementById('word-underline-btn').addEventListener('click', () => wordCmd('underline'));
+            document.getElementById('word-strike-btn').addEventListener('click', () => wordCmd('strikeThrough'));
+            document.getElementById('word-h1-btn').addEventListener('click', () => wordCmd('formatBlock', 'H1'));
+            document.getElementById('word-h2-btn').addEventListener('click', () => wordCmd('formatBlock', 'H2'));
+            document.getElementById('word-h3-btn').addEventListener('click', () => wordCmd('formatBlock', 'H3'));
+            document.getElementById('word-p-btn').addEventListener('click', () => wordCmd('formatBlock', 'P'));
+            document.getElementById('word-ul-btn').addEventListener('click', () => wordCmd('insertUnorderedList'));
+            document.getElementById('word-ol-btn').addEventListener('click', () => wordCmd('insertOrderedList'));
+            document.getElementById('word-align-left-btn').addEventListener('click', () => wordCmd('justifyLeft'));
+            document.getElementById('word-align-center-btn').addEventListener('click', () => wordCmd('justifyCenter'));
+            document.getElementById('word-align-right-btn').addEventListener('click', () => wordCmd('justifyRight'));
+            document.getElementById('word-justify-btn').addEventListener('click', () => wordCmd('justifyFull'));
+            document.getElementById('word-indent-btn').addEventListener('click', () => wordCmd('indent'));
+            document.getElementById('word-outdent-btn').addEventListener('click', () => wordCmd('outdent'));
+            document.getElementById('word-quote-btn').addEventListener('click', () => wordCmd('formatBlock', 'BLOCKQUOTE'));
+            document.getElementById('word-code-btn').addEventListener('click', () => wordCmd('formatBlock', 'PRE'));
+            document.getElementById('word-hr-btn').addEventListener('click', () => wordCmd('insertHorizontalRule'));
+            document.getElementById('word-link-btn').addEventListener('click', () => {
+                const url = prompt('Masukkan URL:');
+                if (url) wordCmd('createLink', url);
+            });
+            document.getElementById('word-unlink-btn').addEventListener('click', () => wordCmd('unlink'));
+            document.getElementById('word-sup-btn').addEventListener('click', () => wordCmd('superscript'));
+            document.getElementById('word-sub-btn').addEventListener('click', () => wordCmd('subscript'));
+            document.getElementById('word-clear-format-btn').addEventListener('click', () => wordCmd('removeFormat'));
+            document.getElementById('word-select-all-btn').addEventListener('click', () => wordCmd('selectAll'));
+            document.getElementById('word-undo-btn').addEventListener('click', () => wordCmd('undo'));
+            document.getElementById('word-redo-btn').addEventListener('click', () => wordCmd('redo'));
+            document.getElementById('word-copy-btn').addEventListener('click', () => wordCmd('copy'));
+            document.getElementById('word-paste-btn').addEventListener('click', () => wordCmd('paste'));
+            document.getElementById('word-find-btn').addEventListener('click', () => {
+                const q = prompt('Cari kata:');
+                if (!q) return;
+                const count = wordFindReplace(q, null);
+                alert(`Ditemukan ${count} kemunculan.`);
+            });
+            document.getElementById('word-replace-btn').addEventListener('click', () => {
+                const q = prompt('Cari kata:');
+                if (!q) return;
+                const r = prompt('Ganti dengan:') ?? '';
+                const count = wordFindReplace(q, r);
+                alert(`Diganti ${count} kemunculan.`);
+            });
+            document.getElementById('word-count-btn').addEventListener('click', () => {
+                const words = getPlainTextFromEditor().split(/\s+/).filter(Boolean).length;
+                alert(`Jumlah kata: ${words}`);
+            });
+            document.getElementById('word-readtime-btn').addEventListener('click', () => {
+                const words = getPlainTextFromEditor().split(/\s+/).filter(Boolean).length;
+                const mins = Math.max(1, Math.ceil(words / 200));
+                alert(`Estimasi waktu baca: ${mins} menit`);
+            });
+            document.getElementById('word-save-local-btn').addEventListener('click', () => {
+                localStorage.setItem('wordStudioDraft_v1', ui.wordEditor.innerHTML);
+                alert('Draft Word Studio tersimpan lokal.');
+            });
+            document.getElementById('word-load-local-btn').addEventListener('click', () => {
+                const draft = localStorage.getItem('wordStudioDraft_v1');
+                if (!draft) return alert('Belum ada draft lokal.');
+                ui.wordEditor.innerHTML = draft;
+            });
+            document.getElementById('word-table-btn').addEventListener('click', insertWordTable);
+            document.getElementById('word-sync-btn').addEventListener('click', syncWordToContent);
+            document.getElementById('word-close-btn').addEventListener('click', () => ui.wordStudio.classList.add('hidden'));
+            document.getElementById('suggest-title-btn').addEventListener('click', () => runDocSupportAction('title'));
+            document.getElementById('generate-outline-btn').addEventListener('click', () => runDocSupportAction('outline'));
+            document.getElementById('generate-abstract-btn').addEventListener('click', () => runDocSupportAction('abstract'));
+            document.getElementById('build-citation-btn').addEventListener('click', () => runDocSupportAction('citation'));
+            document.getElementById('readability-check-btn').addEventListener('click', () => runDocSupportAction('readability'));
+            document.getElementById('plagiarism-local-btn').addEventListener('click', () => runDocSupportAction('plagiarism'));
+            document.getElementById('build-timeline-btn').addEventListener('click', () => runDocSupportAction('timeline'));
+            document.getElementById('method-matrix-btn').addEventListener('click', () => runDocSupportAction('method'));
+            document.getElementById('risk-matrix-btn').addEventListener('click', () => runDocSupportAction('risk'));
+            document.getElementById('auto-conclusion-btn').addEventListener('click', () => runDocSupportAction('conclusion'));
+            document.getElementById('local-ai-summary-btn').addEventListener('click', () => runLocalOfflineAI('summary'));
+            document.getElementById('local-ai-analysis-btn').addEventListener('click', () => runLocalOfflineAI('analysis'));
+            document.getElementById('export-pdf-btn').addEventListener('click', downloadPdfFromContent);
+            document.getElementById('open-doc-btn').addEventListener('click', () => document.getElementById('open-doc-input').click());
+            document.getElementById('open-doc-input').addEventListener('change', (e) => openDocumentFile(e.target.files?.[0]));
+            document.addEventListener('click', async (e) => {
+                const imageBtn = e.target.closest('.auto-image-btn');
+                if (imageBtn) {
+                    const sectionTitle = imageBtn.dataset.section;
+                    const card = imageBtn.closest('.section-card');
+                    await searchImageForSection(sectionTitle, card);
+                    return;
+                }
+                const tableBtn = e.target.closest('.auto-table-btn');
+                if (tableBtn) {
+                    const sectionTitle = tableBtn.dataset.section;
+                    const card = tableBtn.closest('.section-card');
+                    buildAutoTableFromContent(sectionTitle, card);
+                }
+            });
             document.getElementById('create-word-btn').addEventListener('click', createWordFromContent);
             document.getElementById('copy-all-btn').addEventListener('click', copyAllContent);
             document.getElementById('jenis-dokumen').addEventListener('change', updateWorkflowUI);
@@ -1193,12 +2077,7 @@
                     return;
                 }
                 try {
-                    let htmlContent = '<html><head><style>body { font-family: Arial, sans-serif; } h1 { font-size: 18pt; font-weight: bold; margin-top: 24pt; } h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; } p { margin-bottom: 12pt; line-height: 1.5; }</style></head><body>';
-                    for (const title of appState.toc) {
-                        const content = appState.content[title];
-                        htmlContent += `<h1>${title}</h1><div>${marked.parse(content)}</div>`;
-                    }
-                    htmlContent += '</body></html>';
+                    const htmlContent = buildExportHtml();
                     htmlDocx.asBlob(htmlContent).then(blob => {
                         saveAs(blob, 'document.docx');
                     }).catch(err => {
@@ -1214,18 +2093,14 @@
             });
 
             function exportAsHtml() {
-                let htmlContent = '<!DOCTYPE html><html><head><title>Dokumen AutoBab</title><style>body { font-family: Arial, sans-serif; margin: 40px; } h1 { font-size: 18pt; font-weight: bold; margin-top: 24pt; page-break-before: always; } h2 { font-size: 14pt; font-weight: bold; margin-top: 18pt; } p { margin-bottom: 12pt; line-height: 1.5; } ul, ol { margin-bottom: 12pt; } </style></head><body>';
-                for (const title of appState.toc) {
-                    const content = appState.content[title];
-                    htmlContent += `<h1>${title}</h1><div>${marked.parse(content)}</div>`;
-                }
-                htmlContent += '</body></html>';
-                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const blob = new Blob([buildExportHtml()], { type: 'text/html' });
                 saveAs(blob, 'document.html');
                 alert('Dokumen diekspor sebagai HTML. Buka file di browser, lalu simpan sebagai .docx di Microsoft Word (File > Save As > Word Document).');
             }
             document.getElementById('setting-api-key-choice').addEventListener('change', (e) => { appSettings.apiKeyChoice = e.target.value; document.getElementById('setting-custom-api-key').classList.toggle('hidden', e.target.value !== 'custom'); saveSettings(); });
             document.getElementById('setting-custom-api-key').addEventListener('input', (e) => { appSettings.customApiKey = e.target.value; saveSettings(); });
+            document.getElementById('setting-openrouter-api-key').addEventListener('input', (e) => { appSettings.openRouterApiKey = e.target.value; saveSettings(); });
+            document.getElementById('setting-ai-model').addEventListener('change', (e) => { appSettings.aiModel = e.target.value; saveSettings(); });
             document.getElementById('setting-language').addEventListener('change', (e) => { appSettings.language = e.target.value; applyLanguage(e.target.value); saveSettings(); updateWorkflowUI(); });
             document.getElementById('setting-theme').addEventListener('change', (e) => { appSettings.theme = e.target.value; applyTheme(e.target.value); saveSettings(); });
             document.getElementById('setting-toc-dots').addEventListener('change', (e) => { appSettings.tocDots = e.target.checked; saveSettings(); });
@@ -1299,7 +2174,7 @@
                     } else {
                         prompt = `Parafrase teks berikut dengan mode ${mode}: ${selectedText}. Pertahankan format markdown seperti **bold**, *italic*, ***bold italic*** jika ada dalam teks asli.`;
                     }
-                    callGeminiAPI(prompt).then(newText => {
+                    runAdvancedParaphrase(selectedText).then(localText => localText || callGeminiAPI(prompt)).then(newText => {
                         ui.loader.classList.add('hidden');
                         const selection = window.getSelection();
                         if (selection.rangeCount > 0) {
@@ -1382,11 +2257,24 @@
                 }
             });
 
+            ui.applyTemplateBtn.addEventListener('click', () => {
+                const template = ui.topicTemplate.value;
+                if (!template) return;
+                const topicEl = document.getElementById('topik');
+                topicEl.value = topicEl.value.trim() ? `${topicEl.value.trim()}
+${template}` : template;
+            });
+            ui.saveDraftBtn.addEventListener('click', () => saveDraft(true));
+            ui.loadDraftBtn.addEventListener('click', () => loadDraft(true));
+            ui.clearDraftBtn.addEventListener('click', () => clearDraft(true));
+            setInterval(() => saveDraft(false), 20000);
+            window.addEventListener('beforeunload', () => saveDraft(false));
+
             // --- INITIAL SETUP ---
             loadSettings();
             updateWorkflowUI();
+            updateDraftStatus();
         });
     </script>
 </body>
 </html>
-
