@@ -20,12 +20,9 @@
 #include <WebServer.h>
 #include <DHT.h>
 #include <ArduinoJson.h>
-#include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
 #include <time.h>
-#include <esp_system.h>
-#include <rom/rtc.h>
 
 // ============ STATIC CONFIG ============
 const char* ap_ssid = "SMART_CLASS_AP";
@@ -110,12 +107,13 @@ float soundHistory[HISTORY_SIZE];
 int historyIndex = 0;
 bool historyFilled = false;
 
-#define GRAPH_16H_POINTS 960
+#define GRAPH_16H_POINTS 480
 float temp16History[GRAPH_16H_POINTS];
 float dist16History[GRAPH_16H_POINTS];
 int graph16Index = 0;
 bool graph16Filled = false;
 unsigned long lastGraph16Sample = 0;
+const int HISTORY_JSON_POINTS = 120;
 
 // ============ VARIABEL SISTEM ============
 unsigned long bootTime = 0;
@@ -136,11 +134,16 @@ const int NOISE_TRIGGER_TIME = 6;
 float noiseThreshold = 75.0f;
 const int pwmChannel = 0;
 
+// ============ FITUR BARU: MODE MUSIK RINGAN ============
+bool lightweightMusicMode = false;
+uint16_t maxMelodyNotes = 120;
+uint8_t melodyTempoDiv = 1;
+
 // ============ ROBUSTNESS: STATIC JSON BUFFERS ============
 static StaticJsonDocument<256> docSmall;
 static StaticJsonDocument<512> docMedium;
 static StaticJsonDocument<1024> docLarge;
-static StaticJsonDocument<2048> docXLarge;
+static StaticJsonDocument<1536> docXLarge;
 
 // ============ ROBUSTNESS: ERROR COUNTERS ============
 struct ErrorCounters {
@@ -255,8 +258,32 @@ body.dark .stats{color:#aaa}
 <div class="stats" id="sysStats">Error: 0 | WiFi: 0 | DHT: 0 | I2C: 0 | Reset: 0</div>
 </div>
 
+
 <div class="card">
-<h3>Grafik Dashboard 16 Jam</h3>
+<h3>👶 Mode Pemula (Cara Pakai Cepat)</h3>
+<ol style="padding-left:20px">
+<li>Hubungkan HP/Laptop ke WiFi <b>SMART_CLASS_AP</b>.</li>
+<li>Buka web monitor lalu isi <b>Admin Key</b> bila ingin kontrol bel/lagu.</li>
+<li>Cek data sensor di tabel, lalu lihat status badge (AMAN / WASPADA / BAHAYA).</li>
+<li>Pakai menu Piano untuk tes buzzer, atau pilih lagu dari dropdown.</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>📚 Referensi Min/Max (Sumber Asli)</h3>
+<table>
+<tr><th>Parameter</th><th>WHO</th><th>Kemenkes/Standar Kelas</th></tr>
+<tr><td>Suhu</td><td>18-24 C</td><td>18-26 C</td></tr>
+<tr><td>Kelembapan</td><td>40-70 %</td><td>40-70 %</td></tr>
+<tr><td>Kebisingan</td><td><=55 dB</td><td><=55 dB</td></tr>
+<tr><td>Pencahayaan</td><td>300-500 lux</td><td>250-750 lux</td></tr>
+</table>
+<p class="sci">WHO Housing and health guidelines: <a href="https://www.who.int/publications/i/item/9789241550376" target="_blank">who.int</a></p>
+<p class="sci">Permenkes & standar kesehatan lingkungan sekolah: <a href="https://peraturan.bpk.go.id/" target="_blank">peraturan.bpk.go.id</a></p>
+</div>
+
+<div class="card">
+<h3>Grafik Dashboard Ringan (hingga 8 Jam)</h3>
 <canvas id="chart16h" width="860" height="220" style="width:100%;border:1px solid #bbb;border-radius:6px"></canvas>
 <p class="sci">Garis hijau: Suhu (C) | Garis biru: Jarak Ultrasonik (cm)</p>
 </div>
@@ -294,6 +321,12 @@ body.dark .stats{color:#aaa}
 
 <div class="card">
 <h3>🎹 Piano & 50 Lagu Full</h3>
+<div style="margin:8px 0">
+<label>Transpose:</label> <input id="transpose" type="range" min="-12" max="12" value="0" style="width:180px">
+<span id="transpose_val">0</span> semitone |
+<label>Durasi:</label> <input id="toneDur" type="range" min="80" max="500" step="10" value="180" style="width:180px">
+<span id="toneDur_val">180</span> ms
+</div>
 <div class="piano">
 <div class="key" onclick="play(262)">C4</div>
 <div class="key black" onclick="play(277)">C#4</div>
@@ -360,13 +393,18 @@ body.dark .stats{color:#aaa}
 <option value="41">41. Yellow Sub</option>
 <option value="42">42. Take On Me</option>
 <option value="43">43. Pachelbel</option>
-<option name="44">44. Moonlight</option>
+<option value="44">44. Moonlight</option>
 <option value="45">45. Ave Maria</option>
 <option value="46">46. Scherzo</option>
 <option value="47">47. Toreador</option>
 <option value="48">48. Brahms</option>
 <option value="49">49. Bridge</option>
 <option value="50">50. Lavender</option>
+<option value="51">51. Hallelujah</option>
+<option value="52">52. Senorita</option>
+<option value="53">53. Despacito</option>
+<option value="54">54. Shake It</option>
+<option value="55">55. Canon Lite</option>
 </select>
 <button class="btn btn-pri" onclick="playSong(document.getElementById('songSelect').value)">Putar Lagu</button>
 </div>
@@ -408,7 +446,12 @@ body.dark .stats{color:#aaa}
 
 <script>
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500)}
-function play(f){if(f>0)fetch('/play?f='+f)}
+function play(f){
+  const t=parseInt(document.getElementById('transpose').value||'0',10);
+  const d=parseInt(document.getElementById('toneDur').value||'180',10);
+  const target=Math.max(40,Math.min(4000,Math.round(f*Math.pow(2,t/12))));
+  if(target>0)fetch('/play?f='+target+'&d='+d);
+}
 function playSong(id){
   const k=document.getElementById('key').value;
   if(!k){toast('Masukkan Admin Key!');return}
@@ -545,7 +588,7 @@ function draw16hChart(d){
   for(let i=0;i<n;i++){const x=xAt(i),y=yDist(Number(d.dist[i]||0));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();
 
   ctx.fillStyle='#333';ctx.font='12px sans-serif';
-  ctx.fillText('16 jam lalu', p, h-4);
+  ctx.fillText('8 jam lalu', p, h-4);
   ctx.fillText('sekarang', w-62, h-4);
   ctx.fillText('T min/max: '+tMin.toFixed(1)+'/'+tMax.toFixed(1), p, 12);
   ctx.fillText('D min/max: '+dMin.toFixed(1)+'/'+dMax.toFixed(1), w-180, 12);
@@ -562,7 +605,14 @@ function setBadge(id,txt){
   if(txt&&(txt.includes('BAHAYA')||txt.includes('BURUK')||txt.includes('DIAM')||txt.includes('Dekat')))el.className='badge badge-dan'
 }
 let lastAlert=false;
+const fSt=document.getElementById('st_f');
 ensureAdvancedUnitOptions();
+const tr=document.getElementById('transpose');
+const tv=document.getElementById('transpose_val');
+const dr=document.getElementById('toneDur');
+const dv=document.getElementById('toneDur_val');
+if(tr&&tv){tr.addEventListener('input',()=>tv.textContent=tr.value);}
+if(dr&&dv){dr.addEventListener('input',()=>dv.textContent=dr.value);}
 refreshWifiStatus();
 refresh16hChart();
 setInterval(refreshWifiStatus,3000);
@@ -583,10 +633,12 @@ setInterval(()=>{
     document.getElementById('u_n').textContent=d.u_n;
     const ldrDo=document.getElementById('ldr_do');if(ldrDo)ldrDo.textContent=d.ldr_do||'--';
     document.getElementById('flame').textContent=d.f_val||'AMAN';
-    if(d.f_alert){fSt.textContent='BAHAYA';fSt.className='badge badge-dan';if(!lastAlert){toast('!!! API TERDETEKSI !!!');lastAlert=true}}
-    else{fSt.textContent='AMAN';fSt.className='badge badge-ok';lastAlert=false}
+    if(fSt){
+      if(d.f_alert){fSt.textContent='BAHAYA';fSt.className='badge badge-dan';if(!lastAlert){toast('!!! API TERDETEKSI !!!');lastAlert=true}}
+      else{fSt.textContent='AMAN';fSt.className='badge badge-ok';lastAlert=false}
+    }
   }).catch(()=>{})
-});
+},1500);
 </script>
 </body>
 </html>
@@ -736,15 +788,27 @@ void handleWifiReconnect(){ if(WiFi.status()==WL_CONNECTED){ connectedToRouter=t
 void handleNewMessages(int numNewMessages){ for(int i=0;i<numNewMessages;i++){ String chat_id=String(bot.messages[i].chat_id);
   String text=bot.messages[i].text; text.trim(); text.toLowerCase(); int atPos=text.indexOf('@'); if(atPos>0)text=text.substring(0,atPos);
   String from_name=bot.messages[i].from_name; bool kenyCmd=(text=="/kenyamanan"||text=="/kenyamanan_siswa");
-  if(text=="/start"){ String w="Halo "+from_name+"!\nBot Smart Class (Robust)\n/start\n/info\n/sensors\n/kenyamanan_siswa\n/mode"; bot.sendMessage(chat_id,w,""); }
+  if(text=="/start"){ String w="Halo "+from_name+"!\nBot Smart Class (Robust)\n/start\n/info\n/sensor\n/data\n/download\n/kenyamanan_siswa\n/mode"; bot.sendMessage(chat_id,w,""); }
   else if(text=="/info"){ String ip=WiFi.status()==WL_CONNECTED?WiFi.localIP().toString():WiFi.softAPIP().toString();
     String m="IP:http://"+ip+"\nWiFi:"+String(WiFi.status()==WL_CONNECTED?"Terhubung":"AP")+"\nMode:"+getClassModeLabel()+"\nUptime:"+String(millis()/1000)+"s\nHeap:"+String(ESP.getFreeHeap()); bot.sendMessage(chat_id,m,""); }
-  else if(text=="/sensors"){ float t=getTempConverted(temperature),h=getHumConverted(humidity,temperature),g=getGasConverted((float)gasRaw,temperature),l=getLuxConverted(luxEst),n=getNoiseConverted(dB);
+  else if(text=="/sensors"||text=="/sensor"){ float t=getTempConverted(temperature),h=getHumConverted(humidity,temperature),g=getGasConverted((float)gasRaw,temperature),l=getLuxConverted(luxEst),n=getNoiseConverted(dB);
     String m="T:"+String(t,2)+getTempUnitLabel()+"\nH:"+String(h,2)+getHumUnitLabel()+"\nGas:"+String(g,(unitGas=="RAW"?0:2))+getGasUnitLabel()+"\nSuara:"+String(n,2)+getNoiseUnitLabel()+"\nCahaya:"+String(l,2)+getLuxUnitLabel(); bot.sendMessage(chat_id,m,""); }
   else if(kenyCmd){ String m="Stres:"+String(stressScore)+"/100\nMood:"+moodLearn+"\nMode:"+getClassModeLabel(); bot.sendMessage(chat_id,m,""); }
+  else if(text=="/data"){
+    docMedium.clear();
+    docMedium["temp_c"]=temperature; docMedium["hum_pct"]=humidity; docMedium["gas_raw"]=gasRaw;
+    docMedium["noise_db"]=dB; docMedium["lux"]=luxEst; docMedium["distance_cm"]=distanceCm;
+    docMedium["mood"]=moodLearn; docMedium["stress"]=stressScore;
+    String payload; serializeJson(docMedium,payload);
+    bot.sendMessage(chat_id,payload,"");
+  }
+  else if(text=="/download"){
+    String ip=WiFi.status()==WL_CONNECTED?WiFi.localIP().toString():WiFi.softAPIP().toString();
+    bot.sendMessage(chat_id,"Download JSON: http://"+ip+"/download","");
+  }
   else if(text=="/mode"){ String m="Mode:"+getClassModeLabel()+"\nAuto:"+String(autoMode?"ON":"OFF")+"\nAmbient:"+getAmbientModeLabel(); bot.sendMessage(chat_id,m,""); }
   else if(text=="/stats"){ String m="Err Sensor:"+String(errorCounters.sensorErrors)+"\nWiFi:"+String(errorCounters.wifiErrors)+"\nDHT:"+String(errorCounters.dhtErrors); bot.sendMessage(chat_id,m,""); }
-  else bot.sendMessage(chat_id,"Cmds:/start /info /sensors /kenyamanan_siswa /mode /stats",""); } }
+  else bot.sendMessage(chat_id,"Cmds:/start /info /sensor /data /download /kenyamanan_siswa /mode /stats",""); } }
 
 // ============ AMBIENT SOUNDS ============
 void playAmbientFan(){ for(int i=0;i<8;i++){ ledcWriteTone(pwmChannel,80+(i%3)*15); delay(120); } ledcWriteTone(pwmChannel,0); }
@@ -764,7 +828,21 @@ void playBellGuruMasuk(){ playTone(659,200);delay(150);playTone(784,200);delay(1
 void playBellLowEnergi(){ for(int i=0;i<4;i++){playTone(880,100);delay(80);playTone(1100,100);delay(80);}ledcWriteTone(pwmChannel,0);}
 
 #define TEMPO_FULL 2200
-void playMelodyFull(const int* m,size_t len){ for(size_t i=0;i<len;i+=2){int n=m[i],d=m[i+1]?m[i+1]:4;if(n)playTone(n,TEMPO_FULL/d);else delay(TEMPO_FULL/d);}ledcWriteTone(pwmChannel,0);}
+void playMelodyFull(const int* m,size_t len){
+  size_t safeLen=(len/2)*2;
+  if(lightweightMusicMode){
+    size_t cap=(size_t)maxMelodyNotes*2;
+    if(safeLen>cap)safeLen=cap;
+  }
+  uint8_t tempoDiv=(melodyTempoDiv==0)?1:melodyTempoDiv;
+  for(size_t i=0;i<safeLen;i+=2){
+    int n=m[i],d=m[i+1]?m[i+1]:4;
+    int dur=TEMPO_FULL/(d*tempoDiv);
+    if(dur<40)dur=40;
+    if(n)playTone(n,dur);else delay(dur);
+  }
+  ledcWriteTone(pwmChannel,0);
+}
 
 // ============ SONGS ============
 void playNokia(){playMelodyFull(M_NOKIA,sizeof(M_NOKIA)/sizeof(int));}
@@ -817,6 +895,10 @@ void playToreador(){playMelodyFull(M_TOREADOR,sizeof(M_TOREADOR)/sizeof(int));}
 void playBrahms(){playMelodyFull(M_BRAHMS,sizeof(M_BRAHMS)/sizeof(int));}
 void playBridge(){playMelodyFull(M_BRIDGE,sizeof(M_BRIDGE)/sizeof(int));}
 void playLavender(){playMelodyFull(M_LAVENDER,sizeof(M_LAVENDER)/sizeof(int));}
+void playHallelujah(){playMelodyFull(M_HALLELUJAH,sizeof(M_HALLELUJAH)/sizeof(int));}
+void playSenorita(){playMelodyFull(M_SENORITA,sizeof(M_SENORITA)/sizeof(int));}
+void playDespacito(){playMelodyFull(M_DESPACITO,sizeof(M_DESPACITO)/sizeof(int));}
+void playShake(){playMelodyFull(M_SHAKE,sizeof(M_SHAKE)/sizeof(int));}
 
 // ============ SCHEDULE ============
 void checkSchedule(){ struct tm ti; if(!getLocalTime(&ti))return;
@@ -838,8 +920,8 @@ bool validateSSID(const String& s){return s.length()>0&&s.length()<=32;}
 
 // ============ WEB HANDLERS ============
 void handleRoot(){ if(!checkRateLimit()){server.send(429,"text/plain","Too Many Requests");return;} server.send(200,"text/html",index_html); }
-void handlePlay(){ if(!checkRateLimit()){server.send(429,"text/plain","Too Many Requests");return;} int f=server.arg("f").toInt(); if(f>0&&f<5000)playTone(f,200); server.send(200,"text/plain","OK"); }
-void handleSong(){ String k=server.arg("key"); if(!validateKey(k)||k!=ADMIN_KEY){server.send(403,"text/plain","Key Salah!");return;} int id=server.arg("id").toInt(); if(id<1||id>50){server.send(400,"text/plain","ID invalid");return;} server.send(200,"text/plain","Memutar..."); switch(id){case 1:playNokia();break;case 2:playMario();break;case 3:playStarWars();break;case 4:playHBD();break;case 5:playFurElise();break;case 6:playTwinkle();break;case 7:playJingle();break;case 8:playOde();break;case 9:playTetris();break;case 10:playPirates();break;case 11:playHarry();break;case 12:playMission();break;case 13:playTitanic();break;case 14:playWedding();break;case 15:playChopsticks();break;case 16:playLondon();break;case 17:playMary();break;case 18:playRow();break;case 19:playOldMac();break;case 20:playSilent();break;case 21:playWeWish();break;case 22:playAmazing();break;case 23:playBeethoven5();break;case 24:playSmoke();break;case 25:playSeven();break;case 26:playWilliam();break;case 27:playMountain();break;case 28:playTurkish();break;case 29:playABC();break;case 30:playBaaBaa();break;case 31:playYankee();break;case 32:playGreensleeves();break;case 33:playOChristmas();break;case 34:playImagine();break;case 35:playHakuna();break;case 36:playLetItBe();break;case 37:playCanon();break;case 38:playAuldLang();break;case 39:playLaCucaracha();break;case 40:playIndiana();break;case 41:playYellow();break;case 42:playTakeOnMe();break;case 43:playPachelbel();break;case 44:playMoonlight();break;case 45:playAveMaria();break;case 46:playScherzo();break;case 47:playToreador();break;case 48:playBrahms();break;case 49:playBridge();break;case 50:playLavender();break;} }
+void handlePlay(){ if(!checkRateLimit()){server.send(429,"text/plain","Too Many Requests");return;} int f=server.arg("f").toInt(); int d=server.hasArg("d")?server.arg("d").toInt():200; if(d<60)d=60; if(d>1200)d=1200; if(f>0&&f<5000)playTone(f,d); server.send(200,"text/plain","OK"); }
+void handleSong(){ String k=server.arg("key"); if(!validateKey(k)||k!=ADMIN_KEY){server.send(403,"text/plain","Key Salah!");return;} int id=server.arg("id").toInt(); if(id<1||id>55){server.send(400,"text/plain","ID invalid");return;} server.send(200,"text/plain",lightweightMusicMode?"Memutar mode ringan...":"Memutar..."); switch(id){case 1:playNokia();break;case 2:playMario();break;case 3:playStarWars();break;case 4:playHBD();break;case 5:playFurElise();break;case 6:playTwinkle();break;case 7:playJingle();break;case 8:playOde();break;case 9:playTetris();break;case 10:playPirates();break;case 11:playHarry();break;case 12:playMission();break;case 13:playTitanic();break;case 14:playWedding();break;case 15:playChopsticks();break;case 16:playLondon();break;case 17:playMary();break;case 18:playRow();break;case 19:playOldMac();break;case 20:playSilent();break;case 21:playWeWish();break;case 22:playAmazing();break;case 23:playBeethoven5();break;case 24:playSmoke();break;case 25:playSeven();break;case 26:playWilliam();break;case 27:playMountain();break;case 28:playTurkish();break;case 29:playABC();break;case 30:playBaaBaa();break;case 31:playYankee();break;case 32:playGreensleeves();break;case 33:playOChristmas();break;case 34:playImagine();break;case 35:playHakuna();break;case 36:playLetItBe();break;case 37:playCanon();break;case 38:playAuldLang();break;case 39:playLaCucaracha();break;case 40:playIndiana();break;case 41:playYellow();break;case 42:playTakeOnMe();break;case 43:playPachelbel();break;case 44:playMoonlight();break;case 45:playAveMaria();break;case 46:playScherzo();break;case 47:playToreador();break;case 48:playBrahms();break;case 49:playBridge();break;case 50:playLavender();break;case 51:playHallelujah();break;case 52:playSenorita();break;case 53:playDespacito();break;case 54:playShake();break;case 55:playCanon();break;} }
 
 void handleConnect(){ String k=server.arg("key"); if(!validateKey(k)||k!=ADMIN_KEY){server.send(403,"text/plain","Access Denied");return;} String s=server.arg("ssid"),p=server.arg("pass"); if(!validateSSID(s)){server.send(400,"text/plain","SSID invalid");return;} WiFi.begin(s.c_str(),p.c_str()); tryingToConnect=true; connectedToRouter=false; apAutoShutdownArmed=false; apShutdownDone=false; server.send(200,"text/plain","Menghubungkan ke "+s+"..."); }
 
@@ -853,12 +935,137 @@ void handleAmbient(){ int m=server.arg("mode").toInt(); if(m>=1&&m<=3){ambientMo
 
 void handleAutoMode(){ bool on=server.arg("on")=="1"; autoMode=on; docSmall.clear(); docSmall["auto"]=autoMode; String o; serializeJson(docSmall,o); server.send(200,"application/json",o); }
 
+void handleMusicMode(){
+  if(server.hasArg("on"))lightweightMusicMode=server.arg("on")=="1";
+  if(server.hasArg("max")){ int m=server.arg("max").toInt(); if(m>=8&&m<=400)maxMelodyNotes=(uint16_t)m; }
+  if(server.hasArg("tempo")){ int t=server.arg("tempo").toInt(); if(t>=1&&t<=4)melodyTempoDiv=(uint8_t)t; }
+  docSmall.clear();
+  docSmall["light"] = lightweightMusicMode;
+  docSmall["max_notes"] = maxMelodyNotes;
+  docSmall["tempo_div"] = melodyTempoDiv;
+  String o; serializeJson(docSmall,o);
+  server.send(200,"application/json",o);
+}
+
 void handleBell(){ String k=server.arg("key"); if(!validateKey(k)||k!=ADMIN_KEY){server.send(403,"text/plain","Key Salah!");return;} int id=server.arg("id").toInt(); server.send(200,"text/plain","OK"); switch(id){case 1:setClassModeInternal(CLASS_MODE_ISTIRAHAT);playBellIstirahat();break;case 2:setClassModeInternal(CLASS_MODE_BELAJAR);playBellMasuk();break;case 3:setClassModeInternal(CLASS_MODE_ISHOMA);playBellIshoma();break;case 4:playBellGuruMasuk();break;case 5:playBellLowEnergi();break;} }
 
 void handleClassMode(){ String k=server.arg("key"); if(!validateKey(k)||k!=ADMIN_KEY){server.send(403,"text/plain","Key Salah!");return;} int m=server.arg("m").toInt(); if(m<CLASS_MODE_BELAJAR||m>CLASS_MODE_ISHOMA){server.send(400,"text/plain","Mode invalid");return;} setClassModeInternal(m); if(m==CLASS_MODE_ISTIRAHAT)playBellIstirahat();else if(m==CLASS_MODE_ISHOMA)playBellIshoma();else playBellMasuk(); server.send(200,"text/plain","Mode:"+getClassModeLabel()); }
 
 void handleMitigate(){ mitigationMode=true; mitigationUntil=millis()+300000; server.send(200,"text/plain","Mitigasi ON"); playFurElise(); }
 
-void playScherzo() { playMelodyFull(M_SCHERZO, sizeof(M_SCHERZO)/sizeof(int)); }
-void playToreador() { playMelodyFull(M_TOREADOR, sizeof(M_TOREADOR)/sizeof(int)); }
-void playBrahms() { playMelodyFull(M_BRAHMS, sizeof(M_BRAHMS)/sizeof(int)); }
+
+
+// ============ DATA/API HANDLERS ============
+void handleData(){
+  float t=getTempConverted(temperature),h=getHumConverted(humidity,temperature),g=getGasConverted((float)gasRaw,temperature),l=getLuxConverted(luxEst),n=getNoiseConverted(dB);
+  docLarge.clear();
+  docLarge["t"]=String(t,2); docLarge["h"]=String(h,2); docLarge["g"]=String(g,(unitGas=="RAW"?0:2));
+  docLarge["s"]=String(n,2); docLarge["l"]=String(l,2); docLarge["dist"]=String(distanceCm,1);
+  docLarge["u_t"]=getTempUnitLabel(); docLarge["u_h"]=getHumUnitLabel(); docLarge["u_g"]=getGasUnitLabel(); docLarge["u_l"]=getLuxUnitLabel(); docLarge["u_n"]=getNoiseUnitLabel();
+  docLarge["ldr_do"]=ldrDoStatus; docLarge["f_val"]=flameConfirmed?"API":"AMAN"; docLarge["f_alert"]=flameConfirmed;
+  docLarge["stress"]=stressScore; docLarge["mood"]=moodLearn; docLarge["ambient"]=getAmbientModeLabel(); docLarge["class_mode"]=getClassModeLabel();
+  String o; serializeJson(docLarge,o); server.send(200,"application/json",o);
+}
+
+void handleHistory16(){
+  docXLarge.clear();
+  JsonArray t=docXLarge.createNestedArray("temp");
+  JsonArray d=docXLarge.createNestedArray("dist");
+  int n=graph16Filled?GRAPH_16H_POINTS:graph16Index;
+  if(n<=0){ server.send(200,"application/json","{\"temp\":[],\"dist\":[]}"); return; }
+  int step=max(1,n/HISTORY_JSON_POINTS);
+  for(int i=0;i<n;i+=step){
+    int idx=(graph16Filled?(graph16Index+i)%GRAPH_16H_POINTS:i);
+    t.add(temp16History[idx]);
+    d.add(dist16History[idx]);
+  }
+  String o; serializeJson(docXLarge,o); server.send(200,"application/json",o);
+}
+
+void handleSetUnits(){
+  String type=server.arg("t"),v=server.arg("v");
+  if(type=="t")unitTemp=v; else if(type=="h")unitHum=v; else if(type=="g")unitGas=v; else if(type=="l")unitLux=v; else if(type=="n")unitNoise=v;
+  server.send(200,"text/plain","OK");
+}
+
+void handleDownload(){
+  docLarge.clear();
+  docLarge["temperature_c"]=temperature; docLarge["humidity_pct"]=humidity; docLarge["gas_raw"]=gasRaw;
+  docLarge["noise_db"]=dB; docLarge["lux"]=luxEst; docLarge["distance_cm"]=distanceCm;
+  docLarge["stress_score"]=stressScore; docLarge["mood"]=moodLearn;
+  String o; serializeJsonPretty(docLarge,o);
+  server.sendHeader("Content-Disposition","attachment; filename=sensor_data.json");
+  server.send(200,"application/json",o);
+}
+
+void readSensors(){
+  float t=temperature,h=humidity;
+  if(readDHTWithRetry(t,h)){ temperature=t; humidity=h; }
+  gasRaw=analogRead(MQ135_PIN);
+  luxRaw=analogRead(LDR_PIN);
+  luxEst=(4095-luxRaw)*0.25f;
+  int sMin=4095,sMax=0;
+  for(int i=0;i<16;i++){ int sv=analogRead(SOUND_PIN); if(sv<sMin)sMin=sv; if(sv>sMax)sMax=sv; }
+  int amp=sMax-sMin; dB=(amp>0)?(20.0f*log10((float)amp)+10.0f):35.0f;
+  safeFlameState=digitalRead(FLAME_DO_PIN);
+  if(safeFlameState==LOW){ if(flameCounter<FLAME_THRESHOLD)flameCounter++; } else if(flameCounter>0)flameCounter--;
+  flameConfirmed=flameCounter>=FLAME_THRESHOLD;
+  ldrDoStatus=digitalRead(LDR_DO_PIN)==LOW?"Gelap":"Terang";
+  distanceCm=readUltrasonicCm();
+  updateOutlierWin(temperature,dB);
+  computeStressAndMood();
+  updateHistory();
+}
+
+void setup(){
+  Serial.begin(115200);
+  pinMode(FLAME_DO_PIN,INPUT); pinMode(FLAME_AO_PIN,INPUT);
+  pinMode(MQ135_PIN,INPUT); pinMode(LDR_PIN,INPUT); pinMode(LDR_DO_PIN,INPUT); pinMode(SOUND_PIN,INPUT);
+  pinMode(ULTRASONIC_TRIG_PIN,OUTPUT); pinMode(ULTRASONIC_ECHO_PIN,INPUT);
+  dht.begin();
+  ledcSetup(pwmChannel,2000,8); ledcAttachPin(BUZZER2_PIN,pwmChannel);
+  WiFi.mode(WIFI_AP_STA); WiFi.softAP(ap_ssid,ap_password);
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  clientBot.setInsecure();
+
+  server.on("/",handleRoot);
+  server.on("/play",handlePlay);
+  server.on("/song",handleSong);
+  server.on("/data",handleData);
+  server.on("/download",handleDownload);
+  server.on("/history16",handleHistory16);
+  server.on("/scan",handleScan);
+  server.on("/wifi_status",handleWifiStatus);
+  server.on("/connect",handleConnect);
+  server.on("/calibrate",handleCalibrate);
+  server.on("/ambient",handleAmbient);
+  server.on("/auto_mode",handleAutoMode);
+  server.on("/music_mode",handleMusicMode);
+  server.on("/bell",handleBell);
+  server.on("/class_mode",handleClassMode);
+  server.on("/mitigate",handleMitigate);
+  server.on("/api/set_units",handleSetUnits);
+  server.onNotFound([](){ server.send(404,"text/plain","Not Found"); });
+  server.begin();
+
+  bootTime=millis();
+  runCalibration();
+}
+
+void loop(){
+  server.handleClient();
+  unsigned long now=millis();
+  if(now-lastSensorRead>=sensorInterval){ lastSensorRead=now; readSensors(); }
+  if(autoMode && now-lastAutoSwitch>=AUTO_SWITCH_INTERVAL){
+    lastAutoSwitch=now; ambientMode=(ambientMode%3)+1;
+    if(ambientMode==AMBIENT_FAN)playAmbientFan(); else if(ambientMode==AMBIENT_COUGH)playAmbientCough(); else playAmbientTeacher();
+  }
+  if(mitigationMode && now>mitigationUntil)mitigationMode=false;
+  checkSchedule();
+  handleWifiReconnect();
+  if(now-bot_lasttime>BOT_MTBS){
+    int n=bot.getUpdates(bot.last_message_received + 1);
+    while(n){ handleNewMessages(n); n=bot.getUpdates(bot.last_message_received + 1); }
+    bot_lasttime=now;
+  }
+}
